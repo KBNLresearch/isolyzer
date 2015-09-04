@@ -167,9 +167,19 @@ def main():
     print(noVolumeDescriptors)
     
     # Expected ISO size in bytes
-    sizeExpected = 32768 + noVolumeDescriptors * 2048 +  pvdInfo["pathTableSize"] + pvdInfo["volumeSpaceSize"]*pvdInfo["logicalBlockSize"]
+    sizeExpected = 32768 + (noVolumeDescriptors*2048) +  pvdInfo["pathTableSize"] + \
+        (pvdInfo["volumeSpaceSize"]*pvdInfo["logicalBlockSize"])
+
+    # Difference
+    diffSize = sizeExpected - isoFileSize
+
+    # Difference expressed asnumber of sectors
+    diffSectors = diffSize / 2048
     
-    print(isoFileSize,sizeExpected)
+    print("Actual ISO file size: " + str(isoFileSize))
+    print("Expected file size: " + str(sizeExpected))
+    print("Difference (bytes): " + str(diffSize))
+    print("Difference (sectors): " + str(diffSectors))
 
 if __name__ == "__main__":
     main()
