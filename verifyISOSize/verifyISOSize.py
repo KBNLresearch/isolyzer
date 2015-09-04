@@ -147,11 +147,15 @@ def main():
     
     # This is a dummy value
     volumeDescriptorType = -1
+    
+    # Count volume descriptors
+    noVolumeDescriptors = 0
    
     # Read through all 2048-byte volume descriptors, until Volume Descriptor Set Terminator is found
     while volumeDescriptorType != 255:
     
         volumeDescriptorType, volumeDescriptorData, byteEnd = getVolumeDescriptor(isoBytes, byteStart)
+        noVolumeDescriptors += 1
         
         if volumeDescriptorType == 1:
             
@@ -159,9 +163,13 @@ def main():
             pvdInfo = parsePrimaryVolumeDescriptor(volumeDescriptorData)
         
         byteStart = byteEnd
-        print(str(volumeDescriptorType))
     
+    print(noVolumeDescriptors)
     
+    # Expected ISO size in bytes
+    sizeExpected = 32768 + noVolumeDescriptors * 2048 +  pvdInfo["pathTableSize"] + pvdInfo["volumeSpaceSize"]*pvdInfo["logicalBlockSize"]
+    
+    print(isoFileSize,sizeExpected)
 
 if __name__ == "__main__":
     main()
