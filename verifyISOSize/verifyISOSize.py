@@ -82,6 +82,34 @@ def getVolumeDescriptor(bytesData, byteStart):
     
     return(volumeDescriptorType, volumeDescriptorData, byteEnd)
     
+def parsePrimaryVolumeDescriptor(bytesData):
+   
+    # Dictionary to store interesting (size-related) fields from the PVD
+    pvdFields = {}
+    pvdFields["identifier"] = bc.bytesToText(bytesData[1:6])
+    
+    # Note: fields below are stored as both little-endian and big-endian; only
+    # big-endian values read here!
+    
+    # Number of Logical Blocks in which the volume is recorded
+    pvdFields["volumeSpaceSize"] = bc.bytesToUInt(bytesData[84:88])
+    
+    # The size of the set in this logical volume (number of disks)
+    pvdFields["volumeSetSize"] = bc.bytesToUShortInt(bytesData[122:124])
+    
+    # The number of this disk in the Volume Set
+    pvdFields["volumeSequenceNumber"] = bc.bytesToUShortInt(bytesData[126:128])
+
+    # The size in bytes of a logical block
+    pvdFields["logicalBlockSize"] = bc.bytesToUShortInt(bytesData[130:132])
+
+    # The size in bytes of the path table
+    pvdFields["pathTableSize"] = bc.bytesToUInt(bytesData[136:140])
+    
+    print(pvdFields)
+    
+    return(pvdFields)
+    
 def parseCommandLine():
     # Add arguments
     parser.add_argument('ISOImage', 
@@ -107,6 +135,11 @@ def main():
     # Does input image exist?
     checkFileExists(ISOImage)
     
+    # Get file size in bytes
+    isoFileSize = os.path.getsize(ISOImage)
+    
+    # File contents to bytes object (NOTE: this could cause all sorts of problems with very 
+    # large ISOs, so change to part of file later)
     isoBytes = readFileBytes(ISOImage)
     
     # Skip bytes 0 - 32767 (system area, usually empty)
@@ -115,11 +148,16 @@ def main():
     # This is a dummy value
     volumeDescriptorType = -1
    
-    
     # Read through all 2048-byte volume descriptors, until Volume Descriptor Set Terminator is found
     while volumeDescriptorType != 255:
     
         volumeDescriptorType, volumeDescriptorData, byteEnd = getVolumeDescriptor(isoBytes, byteStart)
+        
+        if volumeDescriptorType == 1:
+            
+            # Get info from Primary Volume Descriptor (as a dictionary)
+            pvdInfo = parsePrimaryVolumeDescriptor(volumeDescriptorData)
+        
         byteStart = byteEnd
         print(str(volumeDescriptorType))
     
