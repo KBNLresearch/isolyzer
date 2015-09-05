@@ -31,7 +31,7 @@ def _doConv(bytestr, bOrder, formatCharacter):
     return(result)
 
 def swap32(i):
-	# Byte-swap 4 byte integer
+    # Byte-swap 4 byte integer (Credit: http://stackoverflow.com/a/27506692)
     return struct.unpack("<i", struct.pack(">i", i))[0]
 
 def bytesToULongLong(bytes):
