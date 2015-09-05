@@ -28,4 +28,4 @@ From what I understand (based on <http://wiki.osdev.org/ISO_9660>):
     +  Actual data?                      +
     ++++++++++++++++++++++++++++++++++++++
 
-
+Path tables are 2048 bytes each; value of *pathTableSize* is number of bytes occupied by actual data (excluding padding bytes).
