@@ -28,4 +28,9 @@ From what I understand (based on <http://wiki.osdev.org/ISO_9660>):
     +  Actual data?                      +
     ++++++++++++++++++++++++++++++++++++++
 
-Path tables are 2048 bytes each; value of *pathTableSize* is number of bytes occupied by actual data (excluding padding bytes).
+Note that:
+
+* Volume descriptors are 2048 bytes each
+* Path tables are size *logicalBlockSize* each (typically 2048 bytes, but other valued are possible!). 
+* Value of *pathTableSize* is number of bytes occupied by actual data (excluding padding bytes).
+* Actual data arranged in blocks of size *logicalBlockSize*
