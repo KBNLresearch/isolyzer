@@ -105,6 +105,19 @@ def parsePrimaryVolumeDescriptor(bytesData):
 
     # The size in bytes of the path table
     pvdFields["pathTableSize"] = bc.bytesToUInt(bytesData[136:140])
+
+	# Location of Type-L Path Table (note this is stored as little-endian only, hence
+	# byte swap!)
+    pvdFields["typeLPathTableLocation"] = bc.swap32(bc.bytesToUInt(bytesData[140:144]))
+
+    # Location of Optional Type-L Path Table
+    pvdFields["optionalTypeLPathTableLocation"] = bc.swap32(bc.bytesToUInt(bytesData[144:148]))
+
+    # Location of Type-M Path Table
+    pvdFields["typeMPathTableLocation"] = bc.bytesToUInt(bytesData[148:152])
+
+    # Location of Optional Type-M Path Table
+    pvdFields["optionalTypeMPathTableLocation"] = bc.bytesToUInt(bytesData[152:156])
     
     print(pvdFields)
     
@@ -168,6 +181,10 @@ def main():
     
     # Expected ISO size in bytes
     sizeExpected = 32768 + (noVolumeDescriptors*2048) +  pvdInfo["pathTableSize"] + \
+        (pvdInfo["volumeSpaceSize"]*pvdInfo["logicalBlockSize"])
+
+    # Expected ISO size in bytes
+    sizeExpected = 32768 + (noVolumeDescriptors*2048) +  2*2048 + \
         (pvdInfo["volumeSpaceSize"]*pvdInfo["logicalBlockSize"])
 
     # Difference

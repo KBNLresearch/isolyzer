@@ -30,6 +30,9 @@ def _doConv(bytestr, bOrder, formatCharacter):
         result = -9999
     return(result)
 
+def swap32(i):
+	# Byte-swap 4 byte integer
+    return struct.unpack("<i", struct.pack(">i", i))[0]
 
 def bytesToULongLong(bytes):
     # Unpack 8 byte string to unsigned long long integer, assuming big-endian
