@@ -182,6 +182,9 @@ def main():
     # Expected ISO size in bytes
     sizeExpected = (pvdInfo["volumeSpaceSize"]*pvdInfo["logicalBlockSize"])
 
+    # NOTE: might be off if logicalBlockSize != 2048 (since Sys area and Volume Descriptors
+    # are ALWAYS multiples of 2048 bytes!)
+
     # Difference
     diffSize = sizeExpected - isoFileSize
 
