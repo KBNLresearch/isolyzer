@@ -180,12 +180,7 @@ def main():
     print(noVolumeDescriptors)
     
     # Expected ISO size in bytes
-    sizeExpected = 32768 + (noVolumeDescriptors*2048) +  pvdInfo["pathTableSize"] + \
-        (pvdInfo["volumeSpaceSize"]*pvdInfo["logicalBlockSize"])
-
-    # Expected ISO size in bytes
-    sizeExpected = 32768 + (noVolumeDescriptors*2048) +  2*2048 + \
-        (pvdInfo["volumeSpaceSize"]*pvdInfo["logicalBlockSize"])
+    sizeExpected = (pvdInfo["volumeSpaceSize"]*pvdInfo["logicalBlockSize"])
 
     # Difference
     diffSize = sizeExpected - isoFileSize
