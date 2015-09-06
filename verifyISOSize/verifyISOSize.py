@@ -33,7 +33,7 @@ __version__= "0.1.0"
 
 # Create parser
 parser = argparse.ArgumentParser(
-    description="Verify file size of ISO 9660")
+    description="Verify file size of ISO 9660 image (no support for UDF file systems yet!)")
 
 def main_is_frozen():
     return (hasattr(sys, "frozen") or # new py2exe
@@ -60,18 +60,37 @@ def checkFileExists(fileIn):
         msg=fileIn + " does not exist"
         errorExit(msg)
     
-def readFileBytes(file):
+def readFileBytes(file,byteStart,noBytes):
     # Read file, return contents as a byte object
 
     # Open file
     f = open(file,"rb")
 
+    # Set position to byteStart
+    f.seek(byteStart)
+
     # Put contents of file into a byte object.
-    fileData=f.read()
+    fileData=f.read(noBytes)
     f.close()
 
     return(fileData)
 
+def signatureCheck(bytesData):
+    # Check if file matches binary signature for ISO9660
+    # (Sig based on Apache Tika)
+    # DON'T use because sig doesnt seem to be correct (no match with minimal.iso!) 
+    print(str(bytesData[32769:32774]))
+    print(str(bytesData[34817:34822]))
+    print(str(bytesData[36865:36870]))
+    if (str(bytesData[32769:3276974]) == "CD001") and \
+            (str(bytesData[34817:34822]) == "CD001") and \
+            (str(bytesData[36865:36870]) == "CD001"):
+        iso9660Match = True
+    else:
+        iso9660Match = False
+    
+    return(iso9660Match)
+    
 def getVolumeDescriptor(bytesData, byteStart):
 
     # Read one 2048-byte volume descriptor and return its descriptor
@@ -119,7 +138,7 @@ def parsePrimaryVolumeDescriptor(bytesData):
     # Location of Optional Type-M Path Table
     pvdFields["optionalTypeMPathTableLocation"] = bc.bytesToUInt(bytesData[152:156])
     
-    print(pvdFields)
+    # print(pvdFields)
     
     return(pvdFields)
     
@@ -150,13 +169,21 @@ def main():
     
     # Get file size in bytes
     isoFileSize = os.path.getsize(ISOImage)
+
+    # We'll only read first 30 sectors of image, which should be more than enough for
+    # extracting PVM
+    byteStart = 0
+    noBytes = 30*2048
     
     # File contents to bytes object (NOTE: this could cause all sorts of problems with very 
     # large ISOs, so change to part of file later)
-    isoBytes = readFileBytes(ISOImage)
+    isoBytes = readFileBytes(ISOImage, byteStart,noBytes)
     
     # Skip bytes 0 - 32767 (system area, usually empty)
     byteStart = 32768
+
+    # Is this really an ISO 9660 image? (Skip)
+    #isIso9660 = signatureCheck(isoBytes)
     
     # This is a dummy value
     volumeDescriptorType = -1
@@ -176,9 +203,7 @@ def main():
             pvdInfo = parsePrimaryVolumeDescriptor(volumeDescriptorData)
         
         byteStart = byteEnd
-    
-    print(noVolumeDescriptors)
-    
+       
     # Expected ISO size in bytes
     sizeExpected = (pvdInfo["volumeSpaceSize"]*pvdInfo["logicalBlockSize"])
 
@@ -191,10 +216,21 @@ def main():
     # Difference expressed asnumber of sectors
     diffSectors = diffSize / 2048
     
-    print("Actual ISO file size: " + str(isoFileSize))
-    print("Expected file size: " + str(sizeExpected))
-    print("Difference (bytes): " + str(diffSize))
-    print("Difference (sectors): " + str(diffSectors))
+    if diffSectors == 0:
+        result = "ISO image has expected size"
+    elif diffSectors < 0:
+        result = "ISO image larger than expected size (probably OK)"
+    else:
+        result = "ISO image smaller than expected size (we're in trouble now!)"
+
+    print("-----------------------\n   Results\n-----------------------")
+    print(result)
+    print ("Volume space size: " + str(pvdInfo["volumeSpaceSize"]) + " blocks")
+    print ("Logical block size: " + str(pvdInfo["logicalBlockSize"]) + " bytes")
+    print("Expected file size: " + str(sizeExpected) + " bytes")
+    print("Actual file size: " + str(isoFileSize) + " bytes")
+    print("Difference (expected - actual): " + str(diffSize) + " bytes")
+    print("Difference (expected - actual): " + str(diffSectors) + " sectors")
 
 if __name__ == "__main__":
     main()
