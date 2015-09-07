@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # 
-# Verify if size of CD-ROM ISO image matches information in
+# Verify if size of CD / DVD ISO image matches information in
 # ISO 9660 Volume Descriptors (no support for UDF file systems yet)
 # 
 #
@@ -172,8 +172,8 @@ def main():
 
     # We'll only read first 30 sectors of image, which should be more than enough for
     # extracting PVM
-    byteStart = 0
-    noBytes = 30*2048
+    byteStart = 0  
+    noBytes = min(30*2048,isoFileSize)
     
     # File contents to bytes object (NOTE: this could cause all sorts of problems with very 
     # large ISOs, so change to part of file later)
@@ -190,9 +190,10 @@ def main():
     
     # Count volume descriptors
     noVolumeDescriptors = 0
-   
+
     # Read through all 2048-byte volume descriptors, until Volume Descriptor Set Terminator is found
-    while volumeDescriptorType != 255:
+    # (or unexpected EOF, which will result in -9999 value for volumeDescriptorType)
+    while volumeDescriptorType != 255 and volumeDescriptorType != -9999:
     
         volumeDescriptorType, volumeDescriptorData, byteEnd = getVolumeDescriptor(isoBytes, byteStart)
         noVolumeDescriptors += 1
@@ -207,6 +208,7 @@ def main():
     # Expected ISO size in bytes
     sizeExpected = (pvdInfo["volumeSpaceSize"]*pvdInfo["logicalBlockSize"])
 
+            
     # NOTE: might be off if logicalBlockSize != 2048 (since Sys area and Volume Descriptors
     # are ALWAYS multiples of 2048 bytes!)
 
@@ -229,8 +231,7 @@ def main():
     print ("Logical block size: " + str(pvdInfo["logicalBlockSize"]) + " bytes")
     print("Expected file size: " + str(sizeExpected) + " bytes")
     print("Actual file size: " + str(isoFileSize) + " bytes")
-    print("Difference (expected - actual): " + str(diffSize) + " bytes")
-    print("Difference (expected - actual): " + str(diffSectors) + " sectors")
+    print("Difference (expected - actual): " + str(diffSize) + " bytes / " + str(diffSectors) + " sectors")
 
 if __name__ == "__main__":
     main()
