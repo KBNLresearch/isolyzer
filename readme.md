@@ -5,7 +5,7 @@
 
 1. Locate the image's Primary Volume Descriptor (PVD)
 2. From the PVD, read the Volume Space Size (number of sectors/blocks) and Logical Block Size (number of bytes for each block) fields
-3. Calculate expected file size as Volume Space Size * Logical Block Size
+3. Calculate expected file size as ( Volume Space Size x Logical Block Size )
 4. Compare this against the actual size of the image files.
 
 In practice the following 3 situations can occur:
