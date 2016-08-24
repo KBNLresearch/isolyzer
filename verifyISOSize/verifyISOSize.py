@@ -77,14 +77,15 @@ def readFileBytes(file,byteStart,noBytes):
 
 def signatureCheck(bytesData):
     # Check if file matches binary signature for ISO9660
-    # (Sig based on Apache Tika)
-    # DON'T use because sig doesnt seem to be correct (no match with minimal.iso!) 
-    print(str(bytesData[32769:32774]))
-    print(str(bytesData[34817:34822]))
-    print(str(bytesData[36865:36870]))
-    if (str(bytesData[32769:3276974]) == "CD001") and \
-            (str(bytesData[34817:34822]) == "CD001") and \
-            (str(bytesData[36865:36870]) == "CD001"):
+    # (Check for occurrence at offsets 32769 and 34817; 
+    # apparently 3rd ocurrece at offset 36865 is optional)
+
+    """
+    print(bytesData[32769:32774])
+    print(bytesData[34817:34822])
+    print(bytesData[36865:36870])
+    """
+    if bytesData[32769:32774] == b'CD001'and bytesData[34817:34822] == b'CD001':
         iso9660Match = True
     else:
         iso9660Match = False
@@ -183,7 +184,7 @@ def main():
     byteStart = 32768
 
     # Is this really an ISO 9660 image? (Skip)
-    #isIso9660 = signatureCheck(isoBytes)
+    isIso9660 = signatureCheck(isoBytes)
     
     # This is a dummy value
     volumeDescriptorType = -1
@@ -232,7 +233,8 @@ def main():
     print("Expected file size: " + str(sizeExpected) + " bytes")
     print("Actual file size: " + str(isoFileSize) + " bytes")
     print("Difference (expected - actual): " + str(diffSize) + " bytes / " + str(diffSectors) + " sectors")
-
+    if isIso9660 == False:
+        print("WARNING: signature check failed!")
 if __name__ == "__main__":
     main()
 
