@@ -81,9 +81,9 @@ def signatureCheck(bytesData):
     # apparently 3rd ocurrece at offset 36865 is optional)
 
     print("Signature matches:")
-    print("offset 32669: " + bytesData[32769:32774])
-    print("offset 34817: " + bytesData[34817:34822])
-    print("offset 36865: " + bytesData[36865:36870])
+    print(str("offset 32669: " + bytesData[32769:32774]))
+    print(str("offset 34817: " + bytesData[34817:34822]))
+    print(str("offset 36865: " + bytesData[36865:36870]))
     
     if bytesData[32769:32774] == b'CD001'\
         and bytesData[34817:34822] == b'CD001':
@@ -149,7 +149,7 @@ def parseCommandLine():
     parser.add_argument('ISOImage', 
         action = "store", 
         type = str, 
-        help = "input ISO image")
+        help = "input ISO image(s) (wildcards allowed)")
     parser.add_argument('--version', '-v',
         action = 'version', 
         version = __version__)
@@ -159,18 +159,16 @@ def parseCommandLine():
 
     return(args)
 
-def main():
-    # Get input from command line
-    args = parseCommandLine()
-     
-    # Input
-    ISOImage = args.ISOImage
+def processImage(image):
+    # Does image exist?
+    checkFileExists(image)
     
-    # Does input image exist?
-    checkFileExists(ISOImage)
-    
+    # Print image name to screen
+    print("-----------------------")
+    print("Filename: " + image)
+    print("-----------------------")
     # Get file size in bytes
-    isoFileSize = os.path.getsize(ISOImage)
+    isoFileSize = os.path.getsize(image)
 
     # We'll only read first 30 sectors of image, which should be more than enough for
     # extracting PVM
@@ -179,7 +177,7 @@ def main():
     
     # File contents to bytes object (NOTE: this could cause all sorts of problems with very 
     # large ISOs, so change to part of file later)
-    isoBytes = readFileBytes(ISOImage, byteStart,noBytes)
+    isoBytes = readFileBytes(image, byteStart,noBytes)
     
     # Skip bytes 0 - 32767 (system area, usually empty)
     byteStart = 32768
@@ -236,6 +234,21 @@ def main():
     print("Difference (expected - actual): " + str(diffSize) + " bytes / " + str(diffSectors) + " sectors")
     if isIso9660 == False:
         print("WARNING: signature check failed!")
+    print("\n")
+
+def main():
+    # Get input from command line
+    args = parseCommandLine()
+     
+    # Input
+    ISOImages =  glob.glob(args.ISOImage)
+    
+    print(ISOImages)
+    
+    for image in ISOImages:
+        processImage(image)
+       
+ 
 if __name__ == "__main__":
     main()
 
