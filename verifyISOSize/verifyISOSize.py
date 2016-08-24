@@ -80,12 +80,13 @@ def signatureCheck(bytesData):
     # (Check for occurrence at offsets 32769 and 34817; 
     # apparently 3rd ocurrece at offset 36865 is optional)
 
-    """
-    print(bytesData[32769:32774])
-    print(bytesData[34817:34822])
-    print(bytesData[36865:36870])
-    """
-    if bytesData[32769:32774] == b'CD001'and bytesData[34817:34822] == b'CD001':
+    print("Signature matches:")
+    print("offset 32669: " + bytesData[32769:32774])
+    print("offset 34817: " + bytesData[34817:34822])
+    print("offset 36865: " + bytesData[36865:36870])
+    
+    if bytesData[32769:32774] == b'CD001'\
+        and bytesData[34817:34822] == b'CD001':
         iso9660Match = True
     else:
         iso9660Match = False
