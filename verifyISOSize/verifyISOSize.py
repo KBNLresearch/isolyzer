@@ -384,11 +384,21 @@ def processImage(image):
         # Does image match byte signature for an ISO 9660 image?
         addProperty(tests, "containsISO9660Signature", signatureCheck(isoBytes))
         
-        # Does image contain Apple Partition Map or HFS Header
+        # Does image contain Apple Partition Map or HFS Header?
+        containsApplePartitionMap = isoBytes[512:514] == b'\x50\x4D'
+        containsAppleHFSHeader = isoBytes[1024:1026] == b'\x4C\x4B'
         
-        addProperty(tests, "containsApplePartitionMap", isoBytes[512:514] == b'\x50\x4D')
-        addProperty(tests, "containsAppleHFSHeader", isoBytes[1024:1026] == b'\x4C\x4B')
+        addProperty(tests, "containsApplePartitionMap", containsApplePartitionMap)
+        addProperty(tests, "containsAppleHFSHeader", containsAppleHFSHeader)
         
+        if containsApplePartitionMap == True:
+            # Parse partition map
+            pass
+        
+        if containsAppleHFSHeader == True:
+            # Extract some info from HFS header
+            pass
+            
         # This is a dummy value
         volumeDescriptorType = -1
         
