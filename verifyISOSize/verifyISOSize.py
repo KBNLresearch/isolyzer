@@ -25,11 +25,14 @@ import time
 import imp
 import glob
 import struct
+import re
+import time
 import codecs
 import argparse
 import xml.etree.ElementTree as ET
 import byteconv as bc
 from xml.dom import minidom
+from six import u
 scriptPath, scriptName = os.path.split(sys.argv[0])
 
 __version__= "0.1.0"
@@ -85,6 +88,7 @@ def makeHumanReadable(element, remapTable={}):
     #
     # Property values in original tree may be mapped to alternative (more user-friendly)
     # reportable values using a remapTable, which is a nested dictionary.
+    # TODO: add to separate module
 
     for elt in element.iter():
         # Text field of this element
@@ -157,7 +161,8 @@ def writeElement(elt, codec):
 
     # Make xml pretty
     xmlPretty = minidom.parseString(xmlOut).toprettyxml('    ')
-
+ 
+    """
     # Steps to get rid of xml declaration:
     # String to list
     xmlAsList = xmlPretty.split("\n")
@@ -165,9 +170,51 @@ def writeElement(elt, codec):
     del xmlAsList[0]
     # Convert back to string
     xmlOut = "\n".join(xmlAsList)
-
+    """
+    xmlOut = xmlPretty
+       
     # Write output
     codec.write(xmlOut)
+    
+def stripSurrogatePairs(ustring):
+
+    # Removes surrogate pairs from a Unicode string
+
+    # This works for Python 3.x, but not for 2.x!
+    # Source: http://stackoverflow.com/q/19649463/1209004
+
+    if sys.version.startswith("3"):
+        try:
+            ustring.encode('utf-8')
+        except UnicodeEncodeError:
+            # Strip away surrogate pairs
+            tmp = ustring.encode('utf-8', 'surrogateescape')
+            ustring = tmp.decode('utf-8', 'ignore')
+
+    # In Python 2.x we need to use regex
+    # Source: http://stackoverflow.com/a/18674109/1209004
+
+    if sys.version.startswith("2"):
+        # Generate regex for surrogate pair detection
+
+        lone = re.compile(
+            u(r"""(?x)            # verbose expression (allows comments)
+            (                    # begin group
+            [\ud800-\udbff]      #   match leading surrogate
+            (?![\udc00-\udfff])  #   but only if not followed by trailing surrogate
+            )                    # end group
+            |                    #  OR
+            (                    # begin group
+            (?<![\ud800-\udbff]) #   if not preceded by leading surrogate
+            [\udc00-\udfff]      #   match trailing surrogate
+            )                   # end group
+            """))
+   
+        # Remove surrogates (i.e. replace by empty string) 
+        tmp = lone.sub(r'',ustring).encode('utf-8')
+        ustring = tmp.decode('utf-8')
+
+    return(ustring)
 
 def signatureCheck(bytesData):
     # Check if file matches binary signature for ISO9660
@@ -285,93 +332,138 @@ def parseCommandLine():
     return(args)
 
 def processImage(image):
+
     # Does image exist?
     checkFileExists(image)
+
+    # Create root element for image
+    imageRoot = ET.Element('image')
+
+    # Create elements for storing file and status meta info
+    fileInfo = ET.Element('fileInfo')
+    statusInfo = ET.Element('statusInfo')
+
+    # File name and path 
+    fileName = os.path.basename(image)
+    filePath = os.path.abspath(image)
+
+    # If file name / path contain any surrogate pairs, remove them to
+    # avoid problems when writing to XML
+    fileNameCleaned = stripSurrogatePairs(fileName)
+    filePathCleaned = stripSurrogatePairs(filePath)
+
+    # Produce some general file meta info
+    addProperty(fileInfo, "fileName", fileNameCleaned)
+    addProperty(fileInfo, "filePath", filePathCleaned)
+    addProperty(fileInfo, "fileSizeInBytes", str(os.path.getsize(image)))
+    try:
+        lastModifiedDate = time.ctime(os.path.getmtime(image))
+    except ValueError:
+        # Dates earlier than 1 Jan 1970 can raise ValueError on Windows
+        # Workaround: replace by lowest possible value (typically 1 Jan 1970)
+        lastModifiedDate = time.ctime(0)
+    addProperty(fileInfo, "fileLastModified", lastModifiedDate)
     
-    
+    tests = properties = ET.Element("tests")
     properties = ET.Element("properties")
     
-    # Print image name to screen
-    print("-----------------------")
-    print("Filename: " + image)
-    print("-----------------------")
-    # Get file size in bytes
-    isoFileSize = os.path.getsize(image)
 
-    # We'll only read first 30 sectors of image, which should be more than enough for
-    # extracting PVM
-    byteStart = 0  
-    noBytes = min(30*2048,isoFileSize)
-    
-    # File contents to bytes object (NOTE: this could cause all sorts of problems with very 
-    # large ISOs, so change to part of file later)
-    isoBytes = readFileBytes(image, byteStart,noBytes)
-    
-    # Skip bytes 0 - 32767 (system area, usually empty)
-    byteStart = 32768
+    # Initialise success flag
+    success = True
 
-    # Is this really an ISO 9660 image? (Skip)
-    isIso9660 = signatureCheck(isoBytes)
-    
-    # This is a dummy value
-    volumeDescriptorType = -1
-    
-    # Count volume descriptors
-    noVolumeDescriptors = 0
+    try:    
 
-    # Read through all 2048-byte volume descriptors, until Volume Descriptor Set Terminator is found
-    # (or unexpected EOF, which will result in -9999 value for volumeDescriptorType)
-    while volumeDescriptorType != 255 and volumeDescriptorType != -9999:
-    
-        volumeDescriptorType, volumeDescriptorData, byteEnd = getVolumeDescriptor(isoBytes, byteStart)
-        noVolumeDescriptors += 1
+        # Get file size in bytes
+        isoFileSize = os.path.getsize(image)
+
+        # We'll only read first 30 sectors of image, which should be more than enough for
+        # extracting PVD
+        byteStart = 0  
+        noBytes = min(30*2048,isoFileSize)
+        isoBytes = readFileBytes(image, byteStart,noBytes)
         
-        if volumeDescriptorType == 1:
-            
-            # Get info from Primary Volume Descriptor (as element object)
-            pvdInfo = parsePrimaryVolumeDescriptor(volumeDescriptorData)
-            properties.append(pvdInfo)
+        # Skip bytes 0 - 32767 (system area, usually empty)
+        byteStart = 32768
+
+        # Does image match byte signature for an ISO 9660 image?
+        addProperty(tests, "iso9660SignatureFound", signatureCheck(isoBytes))
         
-        byteStart = byteEnd
-    
-    
-    """   
-    # Expected ISO size in bytes
-    sizeExpected = (pvdInfo["volumeSpaceSize"]*pvdInfo["logicalBlockSize"])
+        # This is a dummy value
+        volumeDescriptorType = -1
+        
+        # Count volume descriptors
+        noVolumeDescriptors = 0
 
+        # Read through all 2048-byte volume descriptors, until Volume Descriptor Set Terminator is found
+        # (or unexpected EOF, which will result in -9999 value for volumeDescriptorType)
+        while volumeDescriptorType != 255 and volumeDescriptorType != -9999:
+        
+            volumeDescriptorType, volumeDescriptorData, byteEnd = getVolumeDescriptor(isoBytes, byteStart)
+            noVolumeDescriptors += 1
             
-    # NOTE: might be off if logicalBlockSize != 2048 (since Sys area and Volume Descriptors
-    # are ALWAYS multiples of 2048 bytes!)
+            if volumeDescriptorType == 1:
+                
+                # Get info from Primary Volume Descriptor (as element object)
+                pvdInfo = parsePrimaryVolumeDescriptor(volumeDescriptorData)
+                properties.append(pvdInfo)
+            
+            byteStart = byteEnd
+        
+        # Expected ISO size in bytes
+        sizeExpected = pvdInfo.find('volumeSpaceSize').text * pvdInfo.find('logicalBlockSize').text 
+                
+        # NOTE: might be off if logicalBlockSize != 2048 (since Sys area and Volume Descriptors
+        # are ALWAYS multiples of 2048 bytes!)
 
-    # Difference
-    diffSize = sizeExpected - isoFileSize
+        # Difference
+        diffSize = sizeExpected - isoFileSize
 
-    # Difference expressed asnumber of sectors
-    diffSectors = diffSize / 2048
-    
-    if diffSectors == 0:
-        result = "ISO image has expected size"
-    elif diffSectors < 0:
-        result = "ISO image larger than expected size (probably OK)"
-    else:
-        result = "ISO image smaller than expected size (we're in trouble now!)"
+        # Difference expressed as number of sectors
+        diffSectors = diffSize / 2048
+        
+        imageLargerThanExpected = False
+        imageSmallerThanExpected = False
+        
+        if diffSectors == 0:
+            imageHasExpectedSize = True
+        elif diffSectors < 0:
+            # Image larger than expected, probably OK
+            imageHasExpectedSize = False
+            imageLargerThanExpected = True
+        else:
+            # Image smaller than expected size, probably indicates a problem
+            imageHasExpectedSize = False
+            imageSmallerThanExpected = True
+           
+        addProperty(tests, "imageHasExpectedSize", imageHasExpectedSize)
+        addProperty(tests, "imageLargerThanExpected", imageLargerThanExpected)
+        addProperty(tests, "imageSmallerThanExpected", imageSmallerThanExpected)
+    except Exception as ex:
+        success = False
+        exceptionType = type(ex)
 
-    print("-----------------------\n   Results\n-----------------------")
-    print(result)
-    print ("Volume space size: " + str(pvdInfo["volumeSpaceSize"]) + " blocks")
-    print ("Logical block size: " + str(pvdInfo["logicalBlockSize"]) + " bytes")
-    print("Expected file size: " + str(sizeExpected) + " bytes")
-    print("Actual file size: " + str(isoFileSize) + " bytes")
-    print("Difference (expected - actual): " + str(diffSize) + " bytes / " + str(diffSectors) + " sectors")
-    if isIso9660 == False:
-        print("WARNING: signature check failed!")
-    print("\n")
-    """
-   
-    makeHumanReadable(properties)
+        if exceptionType == MemoryError:
+            failureMessage = "memory error (file size too large)"
+        elif exceptionType == IOError:
+            failureMessage = "I/O error (cannot open file)"
+        elif exceptionType == RuntimeError:
+            failureMessage = "runtime error (please report to developers)"
+        else:
+            failureMessage = "unknown error (please report to developers)"
+        printWarning(failureMessage)
     
-    writeElement(properties, out)
+     # Add success outcome to status info
+    addProperty(statusInfo, "success", str(success))
+    if success == False:
+        addProperty(statusInfo, "failureMessage", failureMessage)
     
+    imageRoot.append(fileInfo)
+    imageRoot.append(statusInfo)
+    imageRoot.append(tests)
+    imageRoot.append(properties)
+    
+    return(imageRoot)
+
 def main():
 
     global out
@@ -390,11 +482,17 @@ def main():
          
     # Input
     ISOImages =  glob.glob(args.ISOImage)
-    
-    print(ISOImages)
+        
+    root = ET.Element("isolyzer")
+      
     
     for image in ISOImages:
-        processImage(image)
+        result = processImage(image)
+        root.append(result)
+    
+    # Write output
+    makeHumanReadable(root)
+    writeElement(root, out)
        
  
 if __name__ == "__main__":
