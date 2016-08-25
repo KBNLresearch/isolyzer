@@ -372,7 +372,6 @@ def processImage(image):
     success = True
 
     try:    
-
         # Get file size in bytes
         isoFileSize = os.path.getsize(image)
 
@@ -382,17 +381,22 @@ def processImage(image):
         noBytes = min(30*2048,isoFileSize)
         isoBytes = readFileBytes(image, byteStart,noBytes)
         
-        # Skip bytes 0 - 32767 (system area, usually empty)
-        byteStart = 32768
-
         # Does image match byte signature for an ISO 9660 image?
-        addProperty(tests, "iso9660SignatureFound", signatureCheck(isoBytes))
+        addProperty(tests, "containsISO9660Signature", signatureCheck(isoBytes))
+        
+        # Does image contain Apple Partition Map or HFS Header
+        
+        addProperty(tests, "containsApplePartitionMap", isoBytes[512:514] == b'\x50\x4D')
+        addProperty(tests, "containsAppleHFSHeader", isoBytes[1024:1026] == b'\x4C\x4B')
         
         # This is a dummy value
         volumeDescriptorType = -1
         
         # Count volume descriptors
         noVolumeDescriptors = 0
+
+        # Skip to byte 32768, which is where actual ISO 9660 fields start
+        byteStart = 32768
 
         # Read through all 2048-byte volume descriptors, until Volume Descriptor Set Terminator is found
         # (or unexpected EOF, which will result in -9999 value for volumeDescriptorType)
@@ -434,7 +438,10 @@ def processImage(image):
             # Image smaller than expected size, probably indicates a problem
             imageHasExpectedSize = False
             imageSmallerThanExpected = True
-           
+        
+        addProperty(tests, "expectedSize", sizeExpected)
+        addProperty(tests, "actualSize", isoFileSize)
+        addProperty(tests, "sizeDifference", diffSize) 
         addProperty(tests, "imageHasExpectedSize", imageHasExpectedSize)
         addProperty(tests, "imageLargerThanExpected", imageLargerThanExpected)
         addProperty(tests, "imageSmallerThanExpected", imageSmallerThanExpected)
