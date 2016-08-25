@@ -82,7 +82,6 @@ def bytesToInteger(bytes):
 
     return (result)
 
-
 def isctrl(c):
     # Returns True if byte corresponds to device control character
     # (See also: http://www.w3schools.com/tags/ref_ascii.asp)

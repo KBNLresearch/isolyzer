@@ -26,6 +26,7 @@ import imp
 import glob
 import struct
 import argparse
+import xml.etree.ElementTree as ET
 import byteconv as bc
 scriptPath, scriptName = os.path.split(sys.argv[0])
 
@@ -75,16 +76,22 @@ def readFileBytes(file,byteStart,noBytes):
 
     return(fileData)
 
+def addProperty(element, tag, text):
+        # Append childnode with text
+
+        el = ET.SubElement(element, tag)
+        el.text = text
+
 def signatureCheck(bytesData):
     # Check if file matches binary signature for ISO9660
     # (Check for occurrence at offsets 32769 and 34817; 
     # apparently 3rd ocurrece at offset 36865 is optional)
-
+    """
     print("Signature matches:")
     print(str("offset 32669: " + bytesData[32769:32774]))
     print(str("offset 34817: " + bytesData[34817:34822]))
     print(str("offset 36865: " + bytesData[36865:36870]))
-    
+    """
     if bytesData[32769:32774] == b'CD001'\
         and bytesData[34817:34822] == b'CD001':
         iso9660Match = True
@@ -92,6 +99,25 @@ def signatureCheck(bytesData):
         iso9660Match = False
     
     return(iso9660Match)
+
+def decDateTimeToDate(datetime):
+    # Convert 17 bit dec-datetime field to formatted  date-time string
+    # TODO: incorporate time zone offset into result
+    try:
+        year = int(bc.bytesToText(datetime[0:4]))
+        month = int(bc.bytesToText(datetime[4:6]))
+        day = int(bc.bytesToText(datetime[6:8]))
+        hour = int(bc.bytesToText(datetime[8:10]))
+        minute = int(bc.bytesToText(datetime[10:12]))
+        second = int(bc.bytesToText(datetime[12:14]))
+        hundrethSecond = int(bc.bytesToText(datetime[14:16]))
+        timeZoneOffset = bc.bytesToUnsignedChar(datetime[16:17])
+        dateString = "%d/%02d/%02d" % (year, month, day)
+        timeString = "%02d:%02d:%02d" % (hour, minute, second)
+        dateTimeString = "%s, %s" % (dateString, timeString)
+    except ValueError:
+        dateTimeString=""
+    return(dateTimeString)
     
 def getVolumeDescriptor(bytesData, byteStart):
 
@@ -104,43 +130,63 @@ def getVolumeDescriptor(bytesData, byteStart):
     return(volumeDescriptorType, volumeDescriptorData, byteEnd)
     
 def parsePrimaryVolumeDescriptor(bytesData):
-   
+
+    # Set up elemement object to store results
+
+    properties = ET.Element("primaryVolumeDescriptor")
+    
+    addProperty(properties, "standardIdentifier", bc.bytesToText(bytesData[1:6]))
+        
     # Dictionary to store interesting (size-related) fields from the PVD
     pvdFields = {}
-    pvdFields["identifier"] = bc.bytesToText(bytesData[1:6])
+    pvdFields["typeCode"] = bc.bytesToUnsignedChar(bytesData[0:1])
+    pvdFields["standardIdentifier"] = bc.bytesToText(bytesData[1:6])
+    pvdFields["version"] = bc.bytesToUnsignedChar(bytesData[6:7])
+    pvdFields["systemIdentifier"] = bc.bytesToText(bytesData[8:40])
+    pvdFields["volumeIdentifier"] = bc.bytesToText(bytesData[40:72])
     
-    # Note: fields below are stored as both little-endian and big-endian; only
+    # Fields below are stored as both little-endian and big-endian; only
     # big-endian values read here!
     
     # Number of Logical Blocks in which the volume is recorded
     pvdFields["volumeSpaceSize"] = bc.bytesToUInt(bytesData[84:88])
-    
     # The size of the set in this logical volume (number of disks)
     pvdFields["volumeSetSize"] = bc.bytesToUShortInt(bytesData[122:124])
-    
     # The number of this disk in the Volume Set
     pvdFields["volumeSequenceNumber"] = bc.bytesToUShortInt(bytesData[126:128])
-
     # The size in bytes of a logical block
     pvdFields["logicalBlockSize"] = bc.bytesToUShortInt(bytesData[130:132])
-
     # The size in bytes of the path table
     pvdFields["pathTableSize"] = bc.bytesToUInt(bytesData[136:140])
-
 	# Location of Type-L Path Table (note this is stored as little-endian only, hence
 	# byte swap!)
     pvdFields["typeLPathTableLocation"] = bc.swap32(bc.bytesToUInt(bytesData[140:144]))
-
     # Location of Optional Type-L Path Table
     pvdFields["optionalTypeLPathTableLocation"] = bc.swap32(bc.bytesToUInt(bytesData[144:148]))
-
     # Location of Type-M Path Table
     pvdFields["typeMPathTableLocation"] = bc.bytesToUInt(bytesData[148:152])
-
     # Location of Optional Type-M Path Table
     pvdFields["optionalTypeMPathTableLocation"] = bc.bytesToUInt(bytesData[152:156])
     
-    # print(pvdFields)
+    # Following fields are all text strings
+    pvdFields["volumeSetIdentifier"] = bc.bytesToText(bytesData[190:318])
+    pvdFields["publisherIdentifier"] = bc.bytesToText(bytesData[318:446])
+    pvdFields["dataPreparerIdentifier"] = bc.bytesToText(bytesData[446:574])
+    pvdFields["applicationIdentifier"] = bc.bytesToText(bytesData[574:702])
+    pvdFields["copyrightFileIdentifier"] = bc.bytesToText(bytesData[702:740])
+    pvdFields["abstractFileIdentifier"] = bc.bytesToText(bytesData[740:776])
+    pvdFields["bibliographicFileIdentifier"] = bc.bytesToText(bytesData[776:813])
+    
+    # Following fields are all date-time values    
+    pvdFields["volumeCreationDateAndTime"] = decDateTimeToDate(bytesData[813:830])
+    pvdFields["volumeModificationDateAndTime"] = decDateTimeToDate(bytesData[830:847])
+    pvdFields["volumeExpirationDateAndTime"] = decDateTimeToDate(bytesData[847:864])
+    pvdFields["volumeEffectiveDateAndTime"] = decDateTimeToDate(bytesData[864:881])
+    
+    pvdFields["fileStructureVersion"] = bc.bytesToUnsignedChar(bytesData[881:882])
+    
+    print(ET.tostring(properties, 'UTF-8', 'xml'))
+    print(properties)
     
     return(pvdFields)
     
