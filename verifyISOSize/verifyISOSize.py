@@ -25,9 +25,11 @@ import time
 import imp
 import glob
 import struct
+import codecs
 import argparse
 import xml.etree.ElementTree as ET
 import byteconv as bc
+from xml.dom import minidom
 scriptPath, scriptName = os.path.split(sys.argv[0])
 
 __version__= "0.1.0"
@@ -76,11 +78,96 @@ def readFileBytes(file,byteStart,noBytes):
 
     return(fileData)
 
+def makeHumanReadable(element, remapTable={}):
+    # Takes element object, and returns a modified version in which all
+    # non-printable 'text' fields (which may contain numeric data or binary strings)
+    # are replaced by printable strings
+    #
+    # Property values in original tree may be mapped to alternative (more user-friendly)
+    # reportable values using a remapTable, which is a nested dictionary.
+
+    for elt in element.iter():
+        # Text field of this element
+        textIn = elt.text
+
+        # Tag name
+        tag = elt.tag
+
+        # Step 1: replace property values by values defined in enumerationsMap,
+        # if applicable
+        try:
+            # If tag is in enumerationsMap, replace property values
+            parameterMap = remapTable[tag]
+            try:
+                # Map original property values to values in dictionary
+                remappedValue = parameterMap[textIn]
+            except KeyError:
+                # If value doesn't match any key: use original value
+                # instead
+                remappedValue = textIn
+        except KeyError:
+            # If tag doesn't match any key in enumerationsMap, use original
+            # value
+            remappedValue = textIn
+
+        # Step 2: convert all values to text strings.
+
+        # First set up list of all numeric data types,
+        # which is dependent on the Python version used
+
+        if sys.version.startswith("2"):
+            # Python 2.x
+            numericTypes = [int, long, float, bool]
+            # Long type is deprecated in Python 3.x!
+        else:
+            numericTypes = [int, float, bool]
+
+        # Convert
+
+        if remappedValue != None:
+            # Data type
+            textType = type(remappedValue)
+
+            # Convert text field, depending on type
+            if textType == bytes:
+                textOut = bc.bytesToText(remappedValue)
+            elif textType in numericTypes:
+                textOut = str(remappedValue)
+            else:
+                # Remove control chars and strip leading/ trailing whitespaces
+                textOut = bc.removeControlCharacters(remappedValue).strip()
+
+            # Update output tree
+            elt.text = textOut
+
 def addProperty(element, tag, text):
         # Append childnode with text
 
         el = ET.SubElement(element, tag)
         el.text = text
+
+def writeElement(elt, codec):
+    # Writes element as XML to stdout using defined codec
+
+    # Element to string
+    if sys.version.startswith("2"):
+        xmlOut = ET.tostring(elt, 'UTF-8', 'xml')
+    if sys.version.startswith("3"):
+        xmlOut = ET.tostring(elt, 'unicode', 'xml')
+
+    # Make xml pretty
+    xmlPretty = minidom.parseString(xmlOut).toprettyxml('    ')
+
+    # Steps to get rid of xml declaration:
+    # String to list
+    xmlAsList = xmlPretty.split("\n")
+    # Remove first item (xml declaration)
+    del xmlAsList[0]
+    # Convert back to string
+    xmlOut = "\n".join(xmlAsList)
+
+    # Write output
+    codec.write(xmlOut)
 
 def signatureCheck(bytesData):
     # Check if file matches binary signature for ISO9660
@@ -131,64 +218,56 @@ def getVolumeDescriptor(bytesData, byteStart):
     
 def parsePrimaryVolumeDescriptor(bytesData):
 
-    # Set up elemement object to store results
-
+    # Set up elemement object to store extracted properties
     properties = ET.Element("primaryVolumeDescriptor")
-    
+           
+    addProperty(properties, "typeCode", bc.bytesToUnsignedChar(bytesData[0:1]))
     addProperty(properties, "standardIdentifier", bc.bytesToText(bytesData[1:6]))
-        
-    # Dictionary to store interesting (size-related) fields from the PVD
-    pvdFields = {}
-    pvdFields["typeCode"] = bc.bytesToUnsignedChar(bytesData[0:1])
-    pvdFields["standardIdentifier"] = bc.bytesToText(bytesData[1:6])
-    pvdFields["version"] = bc.bytesToUnsignedChar(bytesData[6:7])
-    pvdFields["systemIdentifier"] = bc.bytesToText(bytesData[8:40])
-    pvdFields["volumeIdentifier"] = bc.bytesToText(bytesData[40:72])
+    addProperty(properties, "version", bc.bytesToUnsignedChar(bytesData[6:7]))
+    addProperty(properties, "systemIdentifier", bc.bytesToText(bytesData[8:40]))
+    addProperty(properties, "volumeIdentifier", bc.bytesToText(bytesData[40:72]))
     
     # Fields below are stored as both little-endian and big-endian; only
     # big-endian values read here!
     
     # Number of Logical Blocks in which the volume is recorded
-    pvdFields["volumeSpaceSize"] = bc.bytesToUInt(bytesData[84:88])
+    addProperty(properties, "volumeSpaceSize", bc.bytesToUInt(bytesData[84:88]))
     # The size of the set in this logical volume (number of disks)
-    pvdFields["volumeSetSize"] = bc.bytesToUShortInt(bytesData[122:124])
+    addProperty(properties, "volumeSetSize", bc.bytesToUShortInt(bytesData[122:124]))
     # The number of this disk in the Volume Set
-    pvdFields["volumeSequenceNumber"] = bc.bytesToUShortInt(bytesData[126:128])
+    addProperty(properties, "volumeSequenceNumber", bc.bytesToUShortInt(bytesData[126:128]))
     # The size in bytes of a logical block
-    pvdFields["logicalBlockSize"] = bc.bytesToUShortInt(bytesData[130:132])
+    addProperty(properties, "logicalBlockSize", bc.bytesToUShortInt(bytesData[130:132]))
     # The size in bytes of the path table
-    pvdFields["pathTableSize"] = bc.bytesToUInt(bytesData[136:140])
+    addProperty(properties, "pathTableSize", bc.bytesToUInt(bytesData[136:140]))
 	# Location of Type-L Path Table (note this is stored as little-endian only, hence
 	# byte swap!)
-    pvdFields["typeLPathTableLocation"] = bc.swap32(bc.bytesToUInt(bytesData[140:144]))
+    addProperty(properties, "typeLPathTableLocation", bc.swap32(bc.bytesToUInt(bytesData[140:144])))
     # Location of Optional Type-L Path Table
-    pvdFields["optionalTypeLPathTableLocation"] = bc.swap32(bc.bytesToUInt(bytesData[144:148]))
+    addProperty(properties, "optionalTypeLPathTableLocation", bc.swap32(bc.bytesToUInt(bytesData[144:148])))
     # Location of Type-M Path Table
-    pvdFields["typeMPathTableLocation"] = bc.bytesToUInt(bytesData[148:152])
+    addProperty(properties, "typeMPathTableLocation", bc.bytesToUInt(bytesData[148:152]))
     # Location of Optional Type-M Path Table
-    pvdFields["optionalTypeMPathTableLocation"] = bc.bytesToUInt(bytesData[152:156])
+    addProperty(properties, "optionalTypeMPathTableLocation", bc.bytesToUInt(bytesData[152:156]))
     
     # Following fields are all text strings
-    pvdFields["volumeSetIdentifier"] = bc.bytesToText(bytesData[190:318])
-    pvdFields["publisherIdentifier"] = bc.bytesToText(bytesData[318:446])
-    pvdFields["dataPreparerIdentifier"] = bc.bytesToText(bytesData[446:574])
-    pvdFields["applicationIdentifier"] = bc.bytesToText(bytesData[574:702])
-    pvdFields["copyrightFileIdentifier"] = bc.bytesToText(bytesData[702:740])
-    pvdFields["abstractFileIdentifier"] = bc.bytesToText(bytesData[740:776])
-    pvdFields["bibliographicFileIdentifier"] = bc.bytesToText(bytesData[776:813])
+    addProperty(properties, "volumeSetIdentifier", bc.bytesToText(bytesData[190:318]))
+    addProperty(properties, "publisherIdentifier", bc.bytesToText(bytesData[318:446]))
+    addProperty(properties, "dataPreparerIdentifier", bc.bytesToText(bytesData[446:574]))
+    addProperty(properties, "applicationIdentifier", bc.bytesToText(bytesData[574:702]))
+    addProperty(properties, "copyrightFileIdentifier", bc.bytesToText(bytesData[702:740]))
+    addProperty(properties, "abstractFileIdentifier", bc.bytesToText(bytesData[740:776]))
+    addProperty(properties, "bibliographicFileIdentifier", bc.bytesToText(bytesData[776:813]))
     
     # Following fields are all date-time values    
-    pvdFields["volumeCreationDateAndTime"] = decDateTimeToDate(bytesData[813:830])
-    pvdFields["volumeModificationDateAndTime"] = decDateTimeToDate(bytesData[830:847])
-    pvdFields["volumeExpirationDateAndTime"] = decDateTimeToDate(bytesData[847:864])
-    pvdFields["volumeEffectiveDateAndTime"] = decDateTimeToDate(bytesData[864:881])
+    addProperty(properties, "volumeCreationDateAndTime", decDateTimeToDate(bytesData[813:830]))
+    addProperty(properties, "volumeModificationDateAndTime", decDateTimeToDate(bytesData[830:847]))
+    addProperty(properties, "volumeExpirationDateAndTime", decDateTimeToDate(bytesData[847:864]))
+    addProperty(properties, "volumeEffectiveDateAndTime", decDateTimeToDate(bytesData[864:881]))
     
-    pvdFields["fileStructureVersion"] = bc.bytesToUnsignedChar(bytesData[881:882])
+    addProperty(properties, "fileStructureVersion", bc.bytesToUnsignedChar(bytesData[881:882]))
     
-    print(ET.tostring(properties, 'UTF-8', 'xml'))
-    print(properties)
-    
-    return(pvdFields)
+    return(properties)
     
 def parseCommandLine():
     # Add arguments
@@ -208,6 +287,9 @@ def parseCommandLine():
 def processImage(image):
     # Does image exist?
     checkFileExists(image)
+    
+    
+    properties = ET.Element("properties")
     
     # Print image name to screen
     print("-----------------------")
@@ -246,11 +328,14 @@ def processImage(image):
         
         if volumeDescriptorType == 1:
             
-            # Get info from Primary Volume Descriptor (as a dictionary)
+            # Get info from Primary Volume Descriptor (as element object)
             pvdInfo = parsePrimaryVolumeDescriptor(volumeDescriptorData)
+            properties.append(pvdInfo)
         
         byteStart = byteEnd
-       
+    
+    
+    """   
     # Expected ISO size in bytes
     sizeExpected = (pvdInfo["volumeSpaceSize"]*pvdInfo["logicalBlockSize"])
 
@@ -281,11 +366,28 @@ def processImage(image):
     if isIso9660 == False:
         print("WARNING: signature check failed!")
     print("\n")
-
+    """
+   
+    makeHumanReadable(properties)
+    
+    writeElement(properties, out)
+    
 def main():
+
+    global out
+    global err
+
+    # Set encoding of the terminal to UTF-8
+    if sys.version.startswith("2"):
+        out = codecs.getwriter("UTF-8")(sys.stdout)
+        err = codecs.getwriter("UTF-8")(sys.stderr)
+    elif sys.version.startswith("3"):
+        out = codecs.getwriter("UTF-8")(sys.stdout.buffer)
+        err = codecs.getwriter("UTF-8")(sys.stderr.buffer)
+
     # Get input from command line
     args = parseCommandLine()
-     
+         
     # Input
     ISOImages =  glob.glob(args.ISOImage)
     
