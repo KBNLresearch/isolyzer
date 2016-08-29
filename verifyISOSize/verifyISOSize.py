@@ -273,7 +273,7 @@ def parsePrimaryVolumeDescriptor(bytesData):
     addProperty(properties, "version", bc.bytesToUnsignedChar(bytesData[6:7]))
     addProperty(properties, "systemIdentifier", bc.bytesToText(bytesData[8:40]))
     addProperty(properties, "volumeIdentifier", bc.bytesToText(bytesData[40:72]))
-    
+
     # Fields below are stored as both little-endian and big-endian; only
     # big-endian values read here!
     
@@ -296,7 +296,7 @@ def parsePrimaryVolumeDescriptor(bytesData):
     addProperty(properties, "typeMPathTableLocation", bc.bytesToUInt(bytesData[148:152]))
     # Location of Optional Type-M Path Table
     addProperty(properties, "optionalTypeMPathTableLocation", bc.bytesToUInt(bytesData[152:156]))
-    
+
     # Following fields are all text strings
     addProperty(properties, "volumeSetIdentifier", bc.bytesToText(bytesData[190:318]))
     addProperty(properties, "publisherIdentifier", bc.bytesToText(bytesData[318:446]))
@@ -416,13 +416,11 @@ def processImage(image):
             noVolumeDescriptors += 1
             
             if volumeDescriptorType == 1:
-                
                 # Get info from Primary Volume Descriptor (as element object)
                 pvdInfo = parsePrimaryVolumeDescriptor(volumeDescriptorData)
-                properties.append(pvdInfo)
-            
+                properties.append(pvdInfo)         
             byteStart = byteEnd
-        
+                
         # Expected ISO size in bytes
         sizeExpected = pvdInfo.find('volumeSpaceSize').text * pvdInfo.find('logicalBlockSize').text 
                 
@@ -468,7 +466,7 @@ def processImage(image):
         else:
             failureMessage = "unknown error (please report to developers)"
         printWarning(failureMessage)
-    
+        
      # Add success outcome to status info
     addProperty(statusInfo, "success", str(success))
     if success == False:
