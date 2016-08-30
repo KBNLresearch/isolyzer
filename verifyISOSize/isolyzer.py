@@ -340,23 +340,26 @@ def parseApplePartitionMap(bytesData):
 
     # Based on description at:
     # https://en.wikipedia.org/wiki/Apple_Partition_Map#Layout
+    # and code at:
+    # https://opensource.apple.com/source/IOStorageFamily/IOStorageFamily-116/IOApplePartitionScheme.h
+    # Variable naming mostly follows Apple's code. 
 
     # Set up elemement object to store extracted properties
     properties = ET.Element("applePartitionMap")
              
     addProperty(properties, "signature", bc.bytesToText(bytesData[0:2]))
-    addProperty(properties, "numberOfPartitions", bc.bytesToUInt(bytesData[4:8]))
-    addProperty(properties, "partitionStartingSector", bc.bytesToUInt(bytesData[8:12]))
-    addProperty(properties, "partitionSizeInSectors", bc.bytesToUInt(bytesData[12:16]))
+    addProperty(properties, "numberOfPartitionEntries", bc.bytesToUInt(bytesData[4:8]))
+    addProperty(properties, "partitionBlockStart", bc.bytesToUInt(bytesData[8:12]))
+    addProperty(properties, "partitionBlockCount", bc.bytesToUInt(bytesData[12:16]))
     addProperty(properties, "partitionName", bc.bytesToText(bytesData[16:48]))
     addProperty(properties, "partitionType", bc.bytesToText(bytesData[48:80]))
-    addProperty(properties, "startSectorDataArea", bc.bytesToUInt(bytesData[80:84]))
-    addProperty(properties, "dataAreaSizeInSectors", bc.bytesToUInt(bytesData[84:88]))
-    addProperty(properties, "partitionStatus", bc.bytesToUInt(bytesData[88:92]))
-    addProperty(properties, "startSectorBootCode", bc.bytesToUInt(bytesData[92:96]))
+    addProperty(properties, "partitionLogicalBlockStart", bc.bytesToUInt(bytesData[80:84]))
+    addProperty(properties, "partitionLogicalBlockCount", bc.bytesToUInt(bytesData[84:88]))
+    addProperty(properties, "partitionFlags", bc.bytesToUInt(bytesData[88:92]))
+    addProperty(properties, "bootCodeBlockStart", bc.bytesToUInt(bytesData[92:96]))
     addProperty(properties, "bootCodeSizeInBytes", bc.bytesToUInt(bytesData[96:100]))
-    addProperty(properties, "bootLoaderAddress", bc.bytesToUInt(bytesData[100:104]))
-    addProperty(properties, "bootCodeEntryPoint", bc.bytesToUInt(bytesData[108:112]))
+    addProperty(properties, "bootCodeLoadAddress", bc.bytesToUInt(bytesData[100:104]))
+    addProperty(properties, "bootCodeJumpAddress", bc.bytesToUInt(bytesData[108:112]))
     addProperty(properties, "bootCodeChecksum", bc.bytesToUInt(bytesData[116:120]))
     addProperty(properties, "processorType", bc.bytesToText(bytesData[120:136]))
     return(properties)
@@ -422,6 +425,7 @@ def processImage(image):
 
         # We'll only read first 30 sectors of image, which should be more than enough for
         # extracting PVD
+        # TODO: wont be enough for analysing hybrid FS!
         byteStart = 0  
         noBytes = min(30*2048,isoFileSize)
         isoBytes = readFileBytes(image, byteStart,noBytes)
@@ -451,6 +455,10 @@ def processImage(image):
             # Parse partition map
             applePartitionMapInfo = parseApplePartitionMap(applePartitionMapData)
             properties.append(applePartitionMapInfo)
+            
+            # TODO
+            # Not entirely clear how references between multiple partition map entries works, offset to next PM seems to be
+            #  offset_current_PM +  (partitionBlockStart * blockSize)
             
             # TEST
             applePartitionMapData = isoBytes[1024:1548]
