@@ -32,6 +32,7 @@ import argparse
 import xml.etree.ElementTree as ET
 import byteconv as bc
 from xml.dom import minidom
+from six import u
 scriptPath, scriptName = os.path.split(sys.argv[0])
 
 __version__= "0.1.0"
