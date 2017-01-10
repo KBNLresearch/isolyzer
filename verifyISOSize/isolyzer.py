@@ -425,7 +425,7 @@ def processImage(image):
 
         # We'll only read first 30 sectors of image, which should be more than enough for
         # extracting PVD
-        # TODO: wont be enough for analysing hybrid FS!
+        # TODO: is this enough for any possible hybrid FS?
         byteStart = 0  
         noBytes = min(30*2048,isoFileSize)
         isoBytes = readFileBytes(image, byteStart,noBytes)
@@ -450,6 +450,7 @@ def processImage(image):
             appleZeroBlockInfo = parseAppleZeroBlock(appleZeroBlockData)
             properties.append(appleZeroBlockInfo)
             
+            """
             # Get partition map data
             applePartitionMapData = isoBytes[512:1024]
             # Parse partition map
@@ -465,7 +466,7 @@ def processImage(image):
             # Parse partition map
             applePartitionMapInfo = parseApplePartitionMap(applePartitionMapData)
             properties.append(applePartitionMapInfo)
-            
+            """
         if containsAppleHFSHeader == True:
             # Extract some info from HFS header
             pass
@@ -493,23 +494,30 @@ def processImage(image):
             byteStart = byteEnd
                 
         # Expected ISO size in bytes
-        sizeExpected = pvdInfo.find('volumeSpaceSize').text * pvdInfo.find('logicalBlockSize').text 
+        
+        if containsApplePartitionMap == True:   
+            # Calculate from zero block in Apple partition 
+            sizeExpected = appleZeroBlockInfo.find('blockCount').text * appleZeroBlockInfo.find('blockSize').text          
+        else:
+            # Calculate from Primary Volume Descriptor
+            sizeExpected = pvdInfo.find('volumeSpaceSize').text * pvdInfo.find('logicalBlockSize').text 
                 
-        # NOTE: might be off if logicalBlockSize != 2048 (since Sys area and Volume Descriptors
-        # are ALWAYS multiples of 2048 bytes!)
+            # NOTE: this might be off if logicalBlockSize != 2048 (since Sys area and Volume Descriptors
+            # are ALWAYS multiples of 2048 bytes!). Also, even for non-hybrid FS actual size is sometimes slightly larger than expected size.
+            # Not entirely sure why (padding bytes?)
 
         # Difference
-        diffSize = sizeExpected - isoFileSize
+        diffSize = isoFileSize - sizeExpected
 
         # Difference expressed as number of sectors
-        diffSectors = diffSize / 2048
+        #diffSectors = diffSize / 2048
         
         imageLargerThanExpected = False
         imageSmallerThanExpected = False
         
-        if diffSectors == 0:
+        if diffSize == 0:
             imageHasExpectedSize = True
-        elif diffSectors < 0:
+        elif diffSize > 0:
             # Image larger than expected, probably OK
             imageHasExpectedSize = False
             imageLargerThanExpected = True
@@ -518,21 +526,23 @@ def processImage(image):
             imageHasExpectedSize = False
             imageSmallerThanExpected = True
         
-        addProperty(tests, "expectedSize", sizeExpected)
-        addProperty(tests, "actualSize", isoFileSize)
+        addProperty(tests, "sizeExpected", sizeExpected)
+        addProperty(tests, "sizeActual", isoFileSize)
         addProperty(tests, "sizeDifference", diffSize) 
-        addProperty(tests, "imageHasExpectedSize", imageHasExpectedSize)
+        addProperty(tests, "sizeAsExpected", imageHasExpectedSize)
+        addProperty(tests, "smallerThanExpected", imageSmallerThanExpected)
 
     except Exception as ex:
         success = False
         exceptionType = type(ex)
-
+        
         if exceptionType == MemoryError:
             failureMessage = "memory error (file size too large)"
         elif exceptionType == IOError:
             failureMessage = "I/O error (cannot open file)"
         elif exceptionType == RuntimeError:
             failureMessage = "runtime error (please report to developers)"
+        
         else:
             failureMessage = "unknown error (please report to developers)"
         printWarning(failureMessage)
@@ -578,7 +588,6 @@ def main():
     # Write output
     makeHumanReadable(root)
     writeElement(root, out)
-       
  
 if __name__ == "__main__":
     main()
