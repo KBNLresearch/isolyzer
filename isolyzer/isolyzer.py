@@ -35,7 +35,7 @@ from xml.dom import minidom
 from six import u
 scriptPath, scriptName = os.path.split(sys.argv[0])
 
-__version__ = '0.1.1'
+__version__ = '0.1.2'
 
 # Create parser
 parser = argparse.ArgumentParser(
