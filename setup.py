@@ -7,10 +7,6 @@ import sys
 
 from setuptools import setup, find_packages
 
-readme = open('README.md', 'r')
-README_TEXT = readme.read()
-readme.close()
-
 def read(*parts):
     path = os.path.join(os.path.dirname(__file__), *parts)
     with codecs.open(path, encoding='utf-8') as fobj:
@@ -29,7 +25,7 @@ setup(name='isolyzer',
       license='LGPL',
       platforms=['POSIX', 'Windows'],
       description='Verify size of ISO image',
-      long_description=README_TEXT,
+      long_description='Verify size of ISO image for consistency with Primary Volume Descriptor and Apple Zero Block fields',
       author='Johan van der Knijff',
       author_email='johan.vanderknijff@kb.nl',
       maintainer='Johan van der Knijff',
