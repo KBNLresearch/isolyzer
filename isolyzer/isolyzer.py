@@ -418,7 +418,7 @@ def processImage(image):
 
     # Initialise success flag
     success = True
-
+   
     try:    
         # Get file size in bytes
         isoFileSize = os.path.getsize(image)
@@ -447,8 +447,14 @@ def processImage(image):
             
             # Get zero block data
             appleZeroBlockData = isoBytes[0:512]
-            appleZeroBlockInfo = parseAppleZeroBlock(appleZeroBlockData)
-            properties.append(appleZeroBlockInfo)
+            try:
+                appleZeroBlockInfo = parseAppleZeroBlock(appleZeroBlockData)
+                properties.append(appleZeroBlockInfo)
+                parsedAppleZeroBlock = True
+            except:
+                parsedAppleZeroBlock = False
+            
+            addProperty(tests, "parsedAppleZeroBlock", str(parsedAppleZeroBlock))
             
             """
             # Get partition map data
@@ -489,48 +495,59 @@ def processImage(image):
             
             if volumeDescriptorType == 1:
                 # Get info from Primary Volume Descriptor (as element object)
-                pvdInfo = parsePrimaryVolumeDescriptor(volumeDescriptorData)
-                properties.append(pvdInfo)         
+                try:
+                    pvdInfo = parsePrimaryVolumeDescriptor(volumeDescriptorData)
+                    properties.append(pvdInfo)
+                    parsedPrimaryVolumeDescriptor = True
+                except:
+                    parsedPrimaryVolumeDescriptor = False
+                    
+                addProperty(tests, "parsedPrimaryVolumeDescriptor", str(parsedPrimaryVolumeDescriptor))             
             byteStart = byteEnd
                 
-        # Expected ISO size in bytes
+        calculatedSizeExpected = False
         
-        if containsApplePartitionMap == True:   
+        # Expected ISO size in bytes
+                
+        if containsApplePartitionMap == True and parsedAppleZeroBlock == True:   
             # Calculate from zero block in Apple partition 
-            sizeExpected = appleZeroBlockInfo.find('blockCount').text * appleZeroBlockInfo.find('blockSize').text          
-        else:
+            sizeExpected = appleZeroBlockInfo.find('blockCount').text * appleZeroBlockInfo.find('blockSize').text
+            calculatedSizeExpected = True
+        elif parsedPrimaryVolumeDescriptor == True:
             # Calculate from Primary Volume Descriptor
-            sizeExpected = pvdInfo.find('volumeSpaceSize').text * pvdInfo.find('logicalBlockSize').text 
+            sizeExpected = pvdInfo.find('volumeSpaceSize').text * pvdInfo.find('logicalBlockSize').text
+            calculatedSizeExpected = True
                 
             # NOTE: this might be off if logicalBlockSize != 2048 (since Sys area and Volume Descriptors
             # are ALWAYS multiples of 2048 bytes!). Also, even for non-hybrid FS actual size is sometimes slightly larger than expected size.
             # Not entirely sure why (padding bytes?)
+            
+        if calculatedSizeExpected == True:
+            # Size difference
+            diffSize = isoFileSize - sizeExpected
 
-        # Difference
-        diffSize = isoFileSize - sizeExpected
-
-        # Difference expressed as number of sectors
-        #diffSectors = diffSize / 2048
-        
-        imageLargerThanExpected = False
-        imageSmallerThanExpected = False
-        
-        if diffSize == 0:
-            imageHasExpectedSize = True
-        elif diffSize > 0:
-            # Image larger than expected, probably OK
-            imageHasExpectedSize = False
-            imageLargerThanExpected = True
-        else:
-            # Image smaller than expected size, probably indicates a problem
-            imageHasExpectedSize = False
-            imageSmallerThanExpected = True
-        
-        addProperty(tests, "sizeExpected", sizeExpected)
-        addProperty(tests, "sizeActual", isoFileSize)
-        addProperty(tests, "sizeDifference", diffSize) 
-        addProperty(tests, "sizeAsExpected", imageHasExpectedSize)
-        addProperty(tests, "smallerThanExpected", imageSmallerThanExpected)
+            # Difference expressed as number of sectors
+            #diffSectors = diffSize / 2048
+            
+            imageLargerThanExpected = False
+            imageSmallerThanExpected = False
+            
+            if diffSize == 0:
+                imageHasExpectedSize = True
+            elif diffSize > 0:
+                # Image larger than expected, probably OK
+                imageHasExpectedSize = False
+                imageLargerThanExpected = True
+            else:
+                # Image smaller than expected size, probably indicates a problem
+                imageHasExpectedSize = False
+                imageSmallerThanExpected = True
+            
+            addProperty(tests, "sizeExpected", sizeExpected)
+            addProperty(tests, "sizeActual", isoFileSize)
+            addProperty(tests, "sizeDifference", diffSize) 
+            addProperty(tests, "sizeAsExpected", imageHasExpectedSize)
+            addProperty(tests, "smallerThanExpected", imageSmallerThanExpected)
 
     except Exception as ex:
         success = False
@@ -541,12 +558,12 @@ def processImage(image):
         elif exceptionType == IOError:
             failureMessage = "I/O error (cannot open file)"
         elif exceptionType == RuntimeError:
-            failureMessage = "runtime error (please report to developers)"
-        
+            failureMessage = "runtime error (please report to developers)"        
         else:
             failureMessage = "unknown error (please report to developers)"
+            raise
         printWarning(failureMessage)
-        
+
      # Add success outcome to status info
     addProperty(statusInfo, "success", str(success))
     if success == False:

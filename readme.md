@@ -19,9 +19,11 @@ I wrote this tool after encountering [incomplete ISO images after running ddresc
 
 ## Limitations
 
-* Behaviour with ISO files that use the [Universal Disk Format (UDF)](https://en.wikipedia.org/wiki/Universal_Disk_Format) file system has not been tested yet. 
+* Behaviour with ISO files that use the [Universal Disk Format (UDF)](https://en.wikipedia.org/wiki/Universal_Disk_Format) file system has not been thoroughly tested yet (although preliminary tests on a limited number of video DVDs resulted in expected file size that were equal to the actual size in all cases). 
 * No support (yet?) for HFS partitions that don't have a partition map (although they are detected)
-* Also a correct file *size* alone does not guarantee the integrity of the image (for this there's not getting around running a checksum on both the image and the physical source medium). 
+* Also a correct file *size* alone does not guarantee the integrity of the image (for this there's not getting around running a checksum on both the image and the physical source medium).
+* Other types of hybrid filesystems may exist (but I'm no aware of them, and the available documentation I could find about this is pretty limited)
+
 
 ## Command line use
 
@@ -64,6 +66,7 @@ Output:
                 <containsISO9660Signature>True</containsISO9660Signature>
                 <containsApplePartitionMap>False</containsApplePartitionMap>
                 <containsAppleHFSHeader>False</containsAppleHFSHeader>
+                <parsedPrimaryVolumeDescriptor>True</parsedPrimaryVolumeDescriptor>
                 <sizeExpected>358400</sizeExpected>
                 <sizeActual>358400</sizeActual>
                 <sizeDifference>0</sizeDifference>
@@ -124,6 +127,7 @@ Output:
                 <containsISO9660Signature>True</containsISO9660Signature>
                 <containsApplePartitionMap>False</containsApplePartitionMap>
                 <containsAppleHFSHeader>False</containsAppleHFSHeader>
+                <parsedPrimaryVolumeDescriptor>True</parsedPrimaryVolumeDescriptor>
                 <sizeExpected>358400</sizeExpected>
                 <sizeActual>91582</sizeActual>
                 <sizeDifference>-266818</sizeDifference>
@@ -163,11 +167,33 @@ Output:
         </image>
     </isolyzer>
 
-<!--
+
+
 ### Example 3: ISO truncated before Primary Volume Descriptor
 
     isolyzer.py minimal_trunc_nopvd.iso
     
 Output:
 
--->
+    <isolyzer>
+        <image>
+            <fileInfo>
+                <fileName>minimal_trunc_nopvd.iso</fileName>
+                <filePath>/home/johan/verifyISOSize/testFiles/minimal_trunc_nopvd.iso</filePath>
+                <fileSizeInBytes>32860</fileSizeInBytes>
+                <fileLastModified>Tue Jan 10 18:21:05 2017</fileLastModified>
+            </fileInfo>
+            <statusInfo>
+                <success>True</success>
+            </statusInfo>
+            <tests>
+                <containsISO9660Signature>False</containsISO9660Signature>
+                <containsApplePartitionMap>False</containsApplePartitionMap>
+                <containsAppleHFSHeader>False</containsAppleHFSHeader>
+                <parsedPrimaryVolumeDescriptor>False</parsedPrimaryVolumeDescriptor>
+            </tests>
+            <properties/>
+        </image>
+    </isolyzer>
+
+
