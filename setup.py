@@ -8,7 +8,7 @@ readme.close()
 
 setup(name='isolyzer',
       packages=['isolyzer'],
-      version='0.1.0',
+      version='0.1.1',
       license='LGPL',
       platforms=['POSIX', 'Windows'],
       description='Verify size of ISO image',
