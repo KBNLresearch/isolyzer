@@ -1,6 +1,7 @@
 # Isolyzer
 
 ## About
+
 *Isolyzer* verifies if the file size of a CD / DVD ISO 9660 image is consistent with the information in its [Primary Volume Descriptor](http://wiki.osdev.org/ISO_9660#The_Primary_Volume_Descriptor). For [hybrid discs](https://en.wikipedia.org/wiki/Hybrid_disc) that contain both an ISO 9660 file system and an Apple partition, the file size is verified against the information in its partition table (zero block). This can be useful for detecting incomplete (e.g. truncated) ISO images. What the tool does is this:
 
 1. Locate the image's Primary Volume Descriptor (PVD).
@@ -28,7 +29,7 @@ I wrote this tool after encountering [incomplete ISO images after running ddresc
 
     pip install isolyzer
 
-(May need super user privige, in which case use `sudo pip install jpylyzer`)
+(May need super user privilige, in which case use `sudo pip install jpylyzer`)
 
 To upgrade from a previous version:
 
@@ -206,3 +207,6 @@ Output:
     </isolyzer>
 
 
+## License
+
+Published under the [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0) license.
