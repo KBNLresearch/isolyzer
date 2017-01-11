@@ -24,6 +24,15 @@ I wrote this tool after encountering [incomplete ISO images after running ddresc
 * Also a correct file *size* alone does not guarantee the integrity of the image (for this there's not getting around running a checksum on both the image and the physical source medium).
 * Other types of hybrid filesystems may exist (but I'm no aware of them, and the available documentation I could find about this is pretty limited)
 
+## Installation
+
+    pip install isolyzer
+
+(May need super user privige, in which case use `sudo pip install jpylyzer`)
+
+To upgrade from a previous version:
+
+    pip install isolyzer -U
 
 ## Command line use
 
