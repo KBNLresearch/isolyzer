@@ -37,7 +37,7 @@ setup(name='isolyzer',
       download_url='https://github.com/KBNLresearch/verifyISOSize/archive/0.1.1.tar.gz',
       package_data={'isolyzer': ['*.*']},
       entry_points={'console_scripts': [
-        'isolyzer = isolyzer:main',
+        'isolyzer = isolyzer.isolyzer:main',
       ]},
       classifiers=[
         'Environment :: Console',
