@@ -16,7 +16,8 @@ setup(name='isolyzer',
       author='Johan van der Knijff',
       author_email='johan.vanderknijff@kb.nl',
       maintainer='Johan van der Knijff',
-      maintainer_email='johan.vanderknijff@kb.nl'
+      maintainer_email='johan.vanderknijff@kb.nl',
+      download_url = 'https://github.com/KBNLresearch/verifyISOSize/archive/0.1.1.tar.gz'
       )
 
 
