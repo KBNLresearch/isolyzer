@@ -130,7 +130,7 @@ Output:
                 <fileName>minimal.iso</fileName>
                 <filePath>/home/johan/verifyISOSize/testFiles/minimal.iso</filePath>
                 <fileSizeInBytes>358400</fileSizeInBytes>
-                <fileLastModified>Mon Sep  7 18:29:48 2015</fileLastModified>
+                <fileLastModified>Thu Jan 12 12:48:49 2017</fileLastModified>
             </fileInfo>
             <statusInfo>
                 <success>True</success>
@@ -139,6 +139,7 @@ Output:
                 <containsISO9660Signature>True</containsISO9660Signature>
                 <containsApplePartitionMap>False</containsApplePartitionMap>
                 <containsAppleHFSHeader>False</containsAppleHFSHeader>
+                <containsAppleMasterDirectoryBlock>False</containsAppleMasterDirectoryBlock>
                 <parsedPrimaryVolumeDescriptor>True</parsedPrimaryVolumeDescriptor>
                 <sizeExpected>358400</sizeExpected>
                 <sizeActual>358400</sizeActual>
@@ -178,7 +179,6 @@ Output:
             </properties>
         </image>
     </isolyzer>
-
 ### Example 2: ISO image smaller than expected size
 
     isolyzer minimal_trunc.iso
@@ -200,6 +200,7 @@ Output:
                 <containsISO9660Signature>True</containsISO9660Signature>
                 <containsApplePartitionMap>False</containsApplePartitionMap>
                 <containsAppleHFSHeader>False</containsAppleHFSHeader>
+                <containsAppleMasterDirectoryBlock>False</containsAppleMasterDirectoryBlock>
                 <parsedPrimaryVolumeDescriptor>True</parsedPrimaryVolumeDescriptor>
                 <sizeExpected>358400</sizeExpected>
                 <sizeActual>49157</sizeActual>
@@ -239,7 +240,7 @@ Output:
             </properties>
         </image>
     </isolyzer>
-
+    
 ### Example 3: ISO truncated before Primary Volume Descriptor
 
     isolyzer minimal_trunc_nopvd.iso
@@ -261,7 +262,13 @@ Output:
                 <containsISO9660Signature>False</containsISO9660Signature>
                 <containsApplePartitionMap>False</containsApplePartitionMap>
                 <containsAppleHFSHeader>False</containsAppleHFSHeader>
+                <containsAppleMasterDirectoryBlock>False</containsAppleMasterDirectoryBlock>
                 <parsedPrimaryVolumeDescriptor>False</parsedPrimaryVolumeDescriptor>
+                <sizeExpected>0</sizeExpected>
+                <sizeActual>32860</sizeActual>
+                <sizeDifference>32860</sizeDifference>
+                <sizeAsExpected>False</sizeAsExpected>
+                <smallerThanExpected>False</smallerThanExpected>
             </tests>
             <properties/>
         </image>
