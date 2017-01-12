@@ -88,7 +88,7 @@ Simply enter:
 
 No further configuration is needed in this case. 
 
-## Upgrade Isolyzer to he latest version 
+## Upgrade Isolyzer to the latest version 
 
 For a single user installation:
 
