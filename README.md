@@ -60,7 +60,7 @@ Most likely this will result in:
 
     isolyzer: command not found
 
-If this happens, you will need to directory `~./local/bin` (which is where the Isolyzer command-line tool is installed) to the `PATH` environment variable (you only need to do this once). To do this, locate the (hidden) file `.profile` in you home directory (`~/`), and open it in a text editor. Then add the following lines at the end of the file:
+If this happens, you will need to add the directory `~/.local/bin` (which is where the Isolyzer command-line tool is installed) to the `PATH` environment variable (you only need to do this once). To do this, locate the (hidden) file `.profile` in you home directory (`~/`), and open it in a text editor. Then add the following lines at the end of the file:
 
     # set PATH so it includes the user's .local bin if it exists
     if [ -d "$HOME/.local/bin" ] ; then
