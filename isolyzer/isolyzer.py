@@ -35,7 +35,7 @@ from xml.dom import minidom
 from six import u
 scriptPath, scriptName = os.path.split(sys.argv[0])
 
-__version__ = '0.1.5'
+__version__ = '0.2.0'
 
 # Create parser
 parser = argparse.ArgumentParser(
@@ -364,6 +364,18 @@ def parseApplePartitionMap(bytesData):
     addProperty(properties, "processorType", bc.bytesToText(bytesData[120:136]))
     return(properties)
     
+def parseMasterDirectoryBlock(bytesData):
+    # Based on description at:
+    # https://developer.apple.com/legacy/library/documentation/mac/Files/Files-102.html
+
+    # Set up elemement object to store extracted properties
+    properties = ET.Element("masterDirectoryBlock")
+             
+    addProperty(properties, "signature", bc.bytesToText(bytesData[0:2]))
+    addProperty(properties, "blockSize", bc.bytesToUShortInt(bytesData[18:20]))
+    addProperty(properties, "blockCount", bc.bytesToUInt(bytesData[20:24]))
+    return(properties)
+
 def parseCommandLine():
     # Add arguments
     parser.add_argument('ISOImage', 
@@ -433,12 +445,14 @@ def processImage(image):
         # Does image match byte signature for an ISO 9660 image?
         addProperty(tests, "containsISO9660Signature", signatureCheck(isoBytes))
         
-        # Does image contain Apple Partition Map or HFS Header?
+        # Does image contain Apple Partition Map, HFS Header or Master Directory Block?
         containsApplePartitionMap = isoBytes[0:2] == b'\x45\x52' and isoBytes[512:514] == b'\x50\x4D'
         containsAppleHFSHeader = isoBytes[1024:1026] == b'\x4C\x4B'
-        
+        containsAppleMasterDirectoryBlock = isoBytes[1024:1026] in [b'\x42\x44',b'\xd2\xd7']        
+
         addProperty(tests, "containsApplePartitionMap", containsApplePartitionMap)
         addProperty(tests, "containsAppleHFSHeader", containsAppleHFSHeader)
+        addProperty(tests, "containsAppleMasterDirectoryBlock", containsAppleMasterDirectoryBlock)
         
         if containsApplePartitionMap == True:
                    
@@ -476,6 +490,18 @@ def processImage(image):
         if containsAppleHFSHeader == True:
             # Extract some info from HFS header
             pass
+        
+        if containsAppleMasterDirectoryBlock == True:
+            masterDirectoryBlockData = isoBytes[1024:1536] # Size of MDB?
+            try:
+                masterDirectoryBlockInfo = parseMasterDirectoryBlock(masterDirectoryBlockData)
+                properties.append(masterDirectoryBlockInfo)
+                parsedMasterDirectoryBlock = True
+            except:
+                parsedMasterDirectoryBlock = False
+            
+            addProperty(tests, "parsedMasterDirectoryBlock", str(parsedMasterDirectoryBlock))
+
             
         # This is a dummy value
         volumeDescriptorType = -1
@@ -507,47 +533,57 @@ def processImage(image):
                 
         calculatedSizeExpected = False
         
-        # Expected ISO size in bytes
-                
-        if containsApplePartitionMap == True and parsedAppleZeroBlock == True:   
-            # Calculate from zero block in Apple partition 
-            sizeExpected = appleZeroBlockInfo.find('blockCount').text * appleZeroBlockInfo.find('blockSize').text
-            calculatedSizeExpected = True
-        elif parsedPrimaryVolumeDescriptor == True:
+        # Expected ISO size (bytes) can now be calculated from 3 different places: Zero Block, PVD and/or Master Directory Block
+
+        # Intialise 3 estimates at 0
+        sizeExpectedPVD = 0
+        sizeExpectedZeroBlock = 0
+        sizeExpectedMDB = 0
+
+        if parsedPrimaryVolumeDescriptor == True:
             # Calculate from Primary Volume Descriptor
-            sizeExpected = pvdInfo.find('volumeSpaceSize').text * pvdInfo.find('logicalBlockSize').text
-            calculatedSizeExpected = True
-                
+            sizeExpectedPVD = pvdInfo.find('volumeSpaceSize').text * pvdInfo.find('logicalBlockSize').text
             # NOTE: this might be off if logicalBlockSize != 2048 (since Sys area and Volume Descriptors
             # are ALWAYS multiples of 2048 bytes!). Also, even for non-hybrid FS actual size is sometimes slightly larger than expected size.
             # Not entirely sure why (padding bytes?)
-            
-        if calculatedSizeExpected == True:
-            # Size difference
-            diffSize = isoFileSize - sizeExpected
+                
+        if containsApplePartitionMap == True and parsedAppleZeroBlock == True:   
+            # Calculate from zero block in Apple partition 
+            sizeExpectedZeroBlock = appleZeroBlockInfo.find('blockCount').text * appleZeroBlockInfo.find('blockSize').text
 
-            # Difference expressed as number of sectors
-            #diffSectors = diffSize / 2048
+        if containsAppleMasterDirectoryBlock == True and parsedMasterDirectoryBlock == True:
+            # Calculate from Apple Master Directory Block 
+            sizeExpectedMDB = masterDirectoryBlockInfo.find('blockCount').text * masterDirectoryBlockInfo.find('blockSize').text
+
+        # Assuming here that best estimate is largest out of the above values
+        sizeExpected = max([sizeExpectedPVD, sizeExpectedZeroBlock, sizeExpectedMDB])
+
+        # Size difference
+        diffSize = isoFileSize - sizeExpected
+
+        # Difference expressed as number of sectors
+        #diffSectors = diffSize / 2048
+        
+        imageLargerThanExpected = False
+        imageSmallerThanExpected = False
+        
+        # If sizeExpected is 0 something is seriously wrong, which shouldn't be flagged as expected 
+        if diffSize == 0 and sizeExpected != 0:
+            imageHasExpectedSize = True
+        elif diffSize > 0:
+            # Image larger than expected, probably OK
+            imageHasExpectedSize = False
+            imageLargerThanExpected = True
+        else:
+            # Image smaller than expected size, probably indicates a problem
+            imageHasExpectedSize = False
+            imageSmallerThanExpected = True
             
-            imageLargerThanExpected = False
-            imageSmallerThanExpected = False
-            
-            if diffSize == 0:
-                imageHasExpectedSize = True
-            elif diffSize > 0:
-                # Image larger than expected, probably OK
-                imageHasExpectedSize = False
-                imageLargerThanExpected = True
-            else:
-                # Image smaller than expected size, probably indicates a problem
-                imageHasExpectedSize = False
-                imageSmallerThanExpected = True
-            
-            addProperty(tests, "sizeExpected", sizeExpected)
-            addProperty(tests, "sizeActual", isoFileSize)
-            addProperty(tests, "sizeDifference", diffSize) 
-            addProperty(tests, "sizeAsExpected", imageHasExpectedSize)
-            addProperty(tests, "smallerThanExpected", imageSmallerThanExpected)
+        addProperty(tests, "sizeExpected", sizeExpected)
+        addProperty(tests, "sizeActual", isoFileSize)
+        addProperty(tests, "sizeDifference", diffSize) 
+        addProperty(tests, "sizeAsExpected", imageHasExpectedSize)
+        addProperty(tests, "smallerThanExpected", imageSmallerThanExpected)
 
     except Exception as ex:
         success = False
