@@ -244,7 +244,7 @@ Output:
                 <fileName>minimal_trunc_nopvd.iso</fileName>
                 <filePath>/home/johan/verifyISOSize/testFiles/minimal_trunc_nopvd.iso</filePath>
                 <fileSizeInBytes>32860</fileSizeInBytes>
-                <fileLastModified>Tue Jan 10 18:21:05 2017</fileLastModified>
+                <fileLastModified>Thu Jan 12 14:51:26 2017</fileLastModified>
             </fileInfo>
             <statusInfo>
                 <success>True</success>
