@@ -20,7 +20,7 @@ In practice the following 3 situations can occur:
 
 1. Actual size equals expected size (value of *tests/sizeAsExpected* in the output equals *True*) - perfect!
 2. Actual size is smaller than expected size (value of *tests/sizeAsExpected* in the output equals *False*, and value of *test/smallerThanExpected* equals *True*): in this case the image is damaged or otherwise incomplete.
-3. Actual size is (somewhat) larger than expected size (value of *tests/sizeAsExpected* in the output equals *False*, and value of *test/smallerThanExpected* equals *False*): this seems to be the case for the majority of ISO images on which I tested the tool. Not sure about the exact cause (padding bytes?), but this does not typically indicate a damaged image.
+3. Actual size is (somewhat) larger than expected size (value of *tests/sizeAsExpected* in the output equals *False*, and value of *test/smallerThanExpected* equals *False*): this seems to be the case for the majority of ISO images on which I tested the tool. A possible cause might be that some CD-writers apparently add padding bytes (see for example [here](http://superuser.com/questions/220082/how-to-validate-a-dvd-against-an-iso) and [here](http://twiki.org/cgi-bin/view/Wikilearn/CdromMd5sumsAfterBurning)). I'm not sure if this information is accurate; in any case it does not typically indicate a damaged image.
 
 I wrote this tool after encountering [incomplete ISO images after running ddrescue](http://qanda.digipres.org/1076/incomplete-image-after-imaging-rom-prevent-and-detect-this) (most likely caused by some hardware issue), and subsequently discovering that [isovfy](http://manpages.ubuntu.com/manpages/hardy/man1/devdump.1.html) doesn't detect this at all (tried with version 1.1.11 on Linux Mint 17.1).
 
