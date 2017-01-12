@@ -34,19 +34,67 @@ The code is largely based on the following documentation:
 
 ## Installation
 
-    pip install isolyzer
+The easiest method to install Isolyzer is to use the [*pip* package manager](https://en.wikipedia.org/wiki/Pip_(package_manager)). You will need a recent version of *pip* (version 9.0 or more recent).
 
-(May need super user privilige, in which case use `sudo pip install jpylyzer`)
+Before installing, you need to decide whether you want to install Isolyzer for a single user only, or do a global installation (that is: for all users). The main advantage of a single-user installation is thatn it doesn't require administrator (sudo) rights. The downside is that this will install the tool to a directory that is not included in the `PATH` environment variable by default, which means you'll have to do some (minor) configuration to make it work. A global installation will make Isolyzer usable without any configuration, but the downside is that you need administrator (sudo) rights. Both methods are explained below.
 
-To upgrade from a previous version:
+### Single user installation
 
-    pip install isolyzer -U
+Enter the following command:
+
+   pip install isolyzer --user
+   
+This will install the software to the `.local` folder (hidden by default!) in your home directory (`~/.local`). Next try to run Isolyzer by entering:
+
+     isolyzer
+
+Most likely this will result in:
+
+     isolyzer: command not found
+
+If this happens, you will need to directory `~./local/bin` (which is where the Isolyzer command-line tool is installed) to the `PATH` environment variable (you only need to do this once). To do this, locate the (hidden) file `.profile` in you home directory (`~/`), and open it in a text editor. Then add the following lines at the end of the file:
+
+    # set PATH so it includes the user's .local bin if it exists
+    if [ -d "$HOME/.local/bin" ] ; then
+        PATH="$HOME/.local/bin:$PATH"
+    fi
+
+Save the file, log out of your session and then log in again. Open a command terminal and type:
+
+     isolyzer
+     
+If all went well you now see this:
+
+    usage: isolyzer [-h] [--version] ISOImage
+    isolyzer: error: too few arguments
+
+Which means that the installation was successful!
+
+
+### Global installation
+
+Simply enter:
+
+    sudo -H pip install isolyzer
+
+
+No further configuration is needed in this case. 
+
+## Upgrade Isolyzer to he latest version 
+
+For a single user installation:
+
+    pip install isolyzer -U --user
+
+For a global installation:
+    
+    sudo -H pip install isolyzer -U
 
 ## Command line use
 
 ### Usage
 
-    isolyzer.py [-h] [--version] ISOImage
+    isolyzer [-h] [--version] ISOImage
     
 ### Positional arguments
 
@@ -64,7 +112,7 @@ To upgrade from a previous version:
 
 ### Example 1: ISO image has expected size 
 
-    isolyzer.py minimal.iso
+    isolyzer minimal.iso
     
 Output:
 
@@ -125,7 +173,7 @@ Output:
 
 ### Example 2: ISO image smaller than expected size
 
-    isolyzer.py minimal_trunc.iso
+    isolyzer minimal_trunc.iso
 
 Output:
 
@@ -134,8 +182,8 @@ Output:
             <fileInfo>
                 <fileName>minimal_trunc.iso</fileName>
                 <filePath>/home/johan/verifyISOSize/testFiles/minimal_trunc.iso</filePath>
-                <fileSizeInBytes>91582</fileSizeInBytes>
-                <fileLastModified>Mon Sep  7 18:29:48 2015</fileLastModified>
+                <fileSizeInBytes>49157</fileSizeInBytes>
+                <fileLastModified>Thu Jan 12 13:01:00 2017</fileLastModified>
             </fileInfo>
             <statusInfo>
                 <success>True</success>
@@ -146,8 +194,8 @@ Output:
                 <containsAppleHFSHeader>False</containsAppleHFSHeader>
                 <parsedPrimaryVolumeDescriptor>True</parsedPrimaryVolumeDescriptor>
                 <sizeExpected>358400</sizeExpected>
-                <sizeActual>91582</sizeActual>
-                <sizeDifference>-266818</sizeDifference>
+                <sizeActual>49157</sizeActual>
+                <sizeDifference>-309243</sizeDifference>
                 <sizeAsExpected>False</sizeAsExpected>
                 <smallerThanExpected>True</smallerThanExpected>
             </tests>
@@ -184,11 +232,9 @@ Output:
         </image>
     </isolyzer>
 
-
-
 ### Example 3: ISO truncated before Primary Volume Descriptor
 
-    isolyzer.py minimal_trunc_nopvd.iso
+    isolyzer minimal_trunc_nopvd.iso
     
 Output:
 
