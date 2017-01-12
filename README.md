@@ -50,15 +50,15 @@ Before installing, you need to decide whether you want to install Isolyzer for a
 
 Enter the following command:
 
-   pip install isolyzer --user
+    pip install isolyzer --user
    
 This will install the software to the `.local` folder (hidden by default!) in your home directory (`~/.local`). Next try to run Isolyzer by entering:
 
-     isolyzer
+    isolyzer
 
 Most likely this will result in:
 
-     isolyzer: command not found
+    isolyzer: command not found
 
 If this happens, you will need to directory `~./local/bin` (which is where the Isolyzer command-line tool is installed) to the `PATH` environment variable (you only need to do this once). To do this, locate the (hidden) file `.profile` in you home directory (`~/`), and open it in a text editor. Then add the following lines at the end of the file:
 
