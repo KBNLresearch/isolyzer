@@ -42,11 +42,13 @@ The code is largely based on the following documentation:
 
 ## Installation
 
-The easiest method to install Isolyzer is to use the [*pip* package manager](https://en.wikipedia.org/wiki/Pip_(package_manager)). You will need a recent version of *pip* (version 9.0 or more recent).
+The easiest method to install Isolyzer is to use the [*pip* package manager](https://en.wikipedia.org/wiki/Pip_(package_manager)). You will need a recent version of *pip* (version 9.0 or more recent). Alternatively, Windows users can also use stand-alone 32-bit binaries that don't require Python (see below).
+
+## Installation with pip 
 
 Before installing, you need to decide whether you want to install Isolyzer for a single user only, or do a global installation (that is: for all users). The main advantage of a single-user installation is thatn it doesn't require administrator (sudo) rights. The downside is that this will install the tool to a directory that is not included in the `PATH` environment variable by default, which means you'll have to do some (minor) configuration to make it work. A global installation will make Isolyzer usable without any configuration, but the downside is that you need administrator (sudo) rights. Both methods are explained below.
 
-### Single user installation
+### Single user installation (Linux)
 
 Enter the following command:
 
@@ -79,7 +81,7 @@ If all went well you now see this:
 Which means that the installation was successful!
 
 
-### Global installation
+### Global installation (Linux)
 
 Simply enter:
 
@@ -88,9 +90,19 @@ Simply enter:
 
 No further configuration is needed in this case. 
 
+## Installation from stand-alone binaries (Windows)
+
+Go to the *release* page of Isolyzer's Github repo: 
+
+<https://github.com/KBNLresearch/verifyISOSize/releases>
+
+Then download the file 'isolyzer_x.y.z_win32.zip' from the most recent release. Unzip the file to whatever location on your machine you like. You'll now be able to run Isolyzer from a command window by entering 'isolyzer', including its full path. For example, if you extracted the zip file isolyzer_0.2.0_win32.zip' to directory 'c:\test', you have to enter:
+
+    c:\test\isolyzer_0.2.0_win32\isolyzer
+    
 ## Upgrade Isolyzer to the latest version 
 
-For a single user installation:
+If you installed with pip, enter this for a single user installation:
 
     pip install isolyzer -U --user
 
@@ -98,6 +110,8 @@ For a global installation:
     
     sudo -H pip install isolyzer -U
 
+If you installed from the Windows binaries, repeat the instructions from the 'Installation from stand-alone binaries' section above (you may want to remove the old installation manually).
+    
 ## Command line use
 
 ### Usage
