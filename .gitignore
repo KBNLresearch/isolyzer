@@ -34,6 +34,8 @@ nbactions.xml
 target
 build
 dist
+dist_win64
+dist_win32
 pyi-build
 *.egg-info
 
