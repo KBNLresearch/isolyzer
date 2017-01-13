@@ -35,7 +35,7 @@ from xml.dom import minidom
 from six import u
 scriptPath, scriptName = os.path.split(sys.argv[0])
 
-__version__ = '0.2.0'
+__version__ = '0.2.1'
 
 # Create parser
 parser = argparse.ArgumentParser(
@@ -597,7 +597,7 @@ def processImage(image):
             failureMessage = "runtime error (please report to developers)"        
         else:
             failureMessage = "unknown error (please report to developers)"
-            raise
+            #raise
         printWarning(failureMessage)
 
      # Add success outcome to status info
