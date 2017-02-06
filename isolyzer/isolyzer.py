@@ -30,12 +30,18 @@ import time
 import codecs
 import argparse
 import xml.etree.ElementTree as ET
-import byteconv as bc
 from xml.dom import minidom
-from six import u
+if __package__ is None:
+    import byteconv as bc
+    from six import u
+else:
+    # Use relative imports if run from package
+    from . import byteconv as bc
+    from .six import u
+
 scriptPath, scriptName = os.path.split(sys.argv[0])
 
-__version__ = '0.2.1'
+__version__ = '0.2.2'
 
 # Create parser
 parser = argparse.ArgumentParser(
