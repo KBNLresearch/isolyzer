@@ -305,7 +305,7 @@ Then look for this bit:
 
 So start sector of the data session is 21917. Then:
 
-    isolyzer.py --offset 21917 DISC.iso
+    isolyzer.py --offset 21917 multisession.iso
 
 Result:
 
@@ -313,8 +313,8 @@ Result:
     <isolyzer>
         <image>
             <fileInfo>
-                <fileName>DISC.iso</fileName>
-                <filePath>/home/johan/isoenhancedCD/Session 2/DISC.iso</filePath>
+                <fileName>multisession.iso</fileName>
+                <filePath>/home/johan/verifyISOSize/testFiles/multisession.iso</filePath>
                 <fileSizeInBytes>6950912</fileSizeInBytes>
                 <fileLastModified>Wed Apr 19 14:39:27 2017</fileLastModified>
             </fileInfo>
