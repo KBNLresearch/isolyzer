@@ -116,7 +116,7 @@ If you installed from the Windows binaries, repeat the instructions from the 'In
 
 ### Usage
 
-    isolyzer [-h] [--version] ISOImage
+    isolyzer [-h] [--version] [--offset SECTOROFFSET] ISOImage
     
 ### Positional arguments
 
@@ -127,6 +127,9 @@ If you installed from the Windows binaries, repeat the instructions from the 'In
 `-h, --help` : show this help message and exit;
 
 `-v, --version` : show program's version number and exit;
+
+`--offset SECTOROFFSET`, `-o SECTOROFFSET` : offset (in sectors) of ISO image on CD (analogous to *-N* option in cdinfo)
+
 
 ## Examples
 
@@ -288,6 +291,80 @@ Output:
         </image>
     </isolyzer>
 
+### Example 4: ISO image from 'enhanced' audio CD (multisession)
+
+First use *cd-info* on the physical carrier to find out the start sector of the data session:
+
+    cd-info
+    
+Then look for this bit:
+
+    CD-Plus/Extra   
+    session #2 starts at track  8, LSN: 21917, ISO 9660 blocks:  25309
+    ISO 9660: 25309 blocks, label `DISC 
+
+So start sector of the data session is 21917. Then:
+
+    isolyzer.py --offset 21917 DISC.iso
+
+Result:
+
+    <?xml version="1.0" ?>
+    <isolyzer>
+        <image>
+            <fileInfo>
+                <fileName>DISC.iso</fileName>
+                <filePath>/home/johan/isoenhancedCD/Session 2/DISC.iso</filePath>
+                <fileSizeInBytes>6950912</fileSizeInBytes>
+                <fileLastModified>Wed Apr 19 14:39:27 2017</fileLastModified>
+            </fileInfo>
+            <statusInfo>
+                <success>True</success>
+            </statusInfo>
+            <tests>
+                <containsISO9660Signature>True</containsISO9660Signature>
+                <containsApplePartitionMap>False</containsApplePartitionMap>
+                <containsAppleHFSHeader>False</containsAppleHFSHeader>
+                <containsAppleMasterDirectoryBlock>False</containsAppleMasterDirectoryBlock>
+                <parsedPrimaryVolumeDescriptor>True</parsedPrimaryVolumeDescriptor>
+                <sizeExpected>6946816</sizeExpected>
+                <sizeActual>6950912</sizeActual>
+                <sizeDifference>4096</sizeDifference>
+                <sizeAsExpected>False</sizeAsExpected>
+                <smallerThanExpected>False</smallerThanExpected>
+            </tests>
+            <properties>
+                <primaryVolumeDescriptor>
+                    <typeCode>1</typeCode>
+                    <standardIdentifier>CD001</standardIdentifier>
+                    <version>1</version>
+                    <systemIdentifier>SYSTEMID</systemIdentifier>
+                    <volumeIdentifier>DISC</volumeIdentifier>
+                    <volumeSpaceSize>25309</volumeSpaceSize>
+                    <volumeSetSize>1</volumeSetSize>
+                    <volumeSequenceNumber>1</volumeSequenceNumber>
+                    <logicalBlockSize>2048</logicalBlockSize>
+                    <pathTableSize>218</pathTableSize>
+                    <typeLPathTableLocation>21936</typeLPathTableLocation>
+                    <optionalTypeLPathTableLocation>0</optionalTypeLPathTableLocation>
+                    <typeMPathTableLocation>21937</typeMPathTableLocation>
+                    <optionalTypeMPathTableLocation>0</optionalTypeMPathTableLocation>
+                    <volumeSetIdentifier>DISC</volumeSetIdentifier>
+                    <publisherIdentifier/>
+                    <dataPreparerIdentifier>STARBURN SDK</dataPreparerIdentifier>
+                    <applicationIdentifier/>
+                    <copyrightFileIdentifier/>
+                    <abstractFileIdentifier/>
+                    <bibliographicFileIdentifier/>
+                    <volumeCreationDateAndTime>1899/12/30, 00:00:00</volumeCreationDateAndTime>
+                    <volumeModificationDateAndTime>0/00/00, 00:00:00</volumeModificationDateAndTime>
+                    <volumeExpirationDateAndTime>0/00/00, 00:00:00</volumeExpirationDateAndTime>
+                    <volumeEffectiveDateAndTime>0/00/00, 00:00:00</volumeEffectiveDateAndTime>
+                    <fileStructureVersion>1</fileStructureVersion>
+                </primaryVolumeDescriptor>
+            </properties>
+        </image>
+    </isolyzer>
 
 ## License
 

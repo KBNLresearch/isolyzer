@@ -41,7 +41,7 @@ else:
 
 scriptPath, scriptName = os.path.split(sys.argv[0])
 
-__version__ = '0.2.2'
+__version__ = '0.3.0'
 
 # Create parser
 parser = argparse.ArgumentParser(
