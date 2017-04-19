@@ -64,7 +64,7 @@ pyi-build
 *.7z
 *.dmg
 *.gz
-*.iso
+#*.iso
 *.jar
 *.rar
 *.tar
