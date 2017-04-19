@@ -391,13 +391,19 @@ def parseCommandLine():
     parser.add_argument('--version', '-v',
         action = 'version', 
         version = __version__)
+    parser.add_argument('--offset','-o',
+        type = int,
+        help = "offset (in sectors) of ISO image on CD (analogous to -N option in cdinfo)",
+        action = 'store',
+        dest = 'sectorOffset',
+        default = 0)
 
     # Parse arguments
     args=parser.parse_args()
 
     return(args)
 
-def processImage(image):
+def processImage(image, offset):
 
     # Does image exist?
     checkFileExists(image)
@@ -548,18 +554,19 @@ def processImage(image):
 
         if parsedPrimaryVolumeDescriptor == True:
             # Calculate from Primary Volume Descriptor
-            sizeExpectedPVD = pvdInfo.find('volumeSpaceSize').text * pvdInfo.find('logicalBlockSize').text
+            # Subtracting offset from volumeSpaceSize gives the correct size in case of image from 2nd session of multisession disc
+            sizeExpectedPVD = (pvdInfo.find('volumeSpaceSize').text - offset) * pvdInfo.find('logicalBlockSize').text
             # NOTE: this might be off if logicalBlockSize != 2048 (since Sys area and Volume Descriptors
             # are ALWAYS multiples of 2048 bytes!). Also, even for non-hybrid FS actual size is sometimes slightly larger than expected size.
             # Not entirely sure why (padding bytes?)
                 
         if containsApplePartitionMap == True and parsedAppleZeroBlock == True:   
             # Calculate from zero block in Apple partition 
-            sizeExpectedZeroBlock = appleZeroBlockInfo.find('blockCount').text * appleZeroBlockInfo.find('blockSize').text
+            sizeExpectedZeroBlock = (appleZeroBlockInfo.find('blockCount').text * appleZeroBlockInfo.find('blockSize').text) - (offset * pvdInfo.find('logicalBlockSize').text)
 
         if containsAppleMasterDirectoryBlock == True and parsedMasterDirectoryBlock == True:
             # Calculate from Apple Master Directory Block 
-            sizeExpectedMDB = masterDirectoryBlockInfo.find('blockCount').text * masterDirectoryBlockInfo.find('blockSize').text
+            sizeExpectedMDB = (masterDirectoryBlockInfo.find('blockCount').text * masterDirectoryBlockInfo.find('blockSize').text) - (offset * pvdInfo.find('logicalBlockSize').text) 
 
         # Assuming here that best estimate is largest out of the above values
         sizeExpected = max([sizeExpectedPVD, sizeExpectedZeroBlock, sizeExpectedMDB])
@@ -636,12 +643,14 @@ def main():
          
     # Input
     ISOImages =  glob.glob(args.ISOImage)
-        
+    
+    # Sector offset
+    sectorOffset = args.sectorOffset    
     root = ET.Element("isolyzer")
       
     
     for image in ISOImages:
-        result = processImage(image)
+        result = processImage(image,sectorOffset)
         root.append(result)
     
     # Write output
