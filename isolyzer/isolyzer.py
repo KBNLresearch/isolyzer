@@ -562,11 +562,11 @@ def processImage(image, offset):
                 
         if containsApplePartitionMap == True and parsedAppleZeroBlock == True:   
             # Calculate from zero block in Apple partition 
-            sizeExpectedZeroBlock = (appleZeroBlockInfo.find('blockCount').text * appleZeroBlockInfo.find('blockSize').text) - (offset * pvdInfo.find('logicalBlockSize').text)
+            sizeExpectedZeroBlock = (appleZeroBlockInfo.find('blockCount').text * appleZeroBlockInfo.find('blockSize').text)
 
         if containsAppleMasterDirectoryBlock == True and parsedMasterDirectoryBlock == True:
             # Calculate from Apple Master Directory Block 
-            sizeExpectedMDB = (masterDirectoryBlockInfo.find('blockCount').text * masterDirectoryBlockInfo.find('blockSize').text) - (offset * pvdInfo.find('logicalBlockSize').text) 
+            sizeExpectedMDB = (masterDirectoryBlockInfo.find('blockCount').text * masterDirectoryBlockInfo.find('blockSize').text)
 
         # Assuming here that best estimate is largest out of the above values
         sizeExpected = max([sizeExpectedPVD, sizeExpectedZeroBlock, sizeExpectedMDB])
