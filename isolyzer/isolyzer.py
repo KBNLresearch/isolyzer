@@ -259,15 +259,26 @@ def decDateTimeToDate(datetime):
         dateTimeString=""
     return(dateTimeString)
     
-def getVolumeDescriptor(bytesData, byteStart):
+def getISOVolumeDescriptor(bytesData, byteStart):
 
-    # Read one 2048-byte volume descriptor and return its descriptor
+    # Read one 2048-byte ISO volume descriptor and return its descriptor
     # code and contents
     byteEnd = byteStart + 2048
     volumeDescriptorType = bc.bytesToUnsignedChar(bytesData[byteStart:byteStart+1])
     volumeDescriptorData = bytesData[byteStart:byteEnd]
     
     return(volumeDescriptorType, volumeDescriptorData, byteEnd)
+    
+    
+def getUDFVolumeDescriptor(bytesData, byteStart):
+
+    # Read one 2048-byte UDF volume descriptor and return its descriptor
+    # code and contents
+    byteEnd = byteStart + 2048
+    volumeDescriptorIdentifier = bc.bytesToText(bytesData[byteStart+1:byteStart+6])
+    volumeDescriptorData = bytesData[byteStart:byteEnd]
+    
+    return(volumeDescriptorIdentifier, volumeDescriptorData, byteEnd)
     
 def parsePrimaryVolumeDescriptor(bytesData):
 
@@ -519,17 +530,18 @@ def processImage(image, offset):
         volumeDescriptorType = -1
         
         # Count volume descriptors
-        noVolumeDescriptors = 0
+        noISOVolumeDescriptors = 0
 
         # Skip to byte 32768, which is where actual ISO 9660 fields start
         byteStart = 32768
 
-        # Read through all 2048-byte volume descriptors, until Volume Descriptor Set Terminator is found
+        # Read through all 2048-byte ISO volume descriptors, until Volume Descriptor Set Terminator is found
         # (or unexpected EOF, which will result in -9999 value for volumeDescriptorType)
         while volumeDescriptorType != 255 and volumeDescriptorType != -9999:
         
-            volumeDescriptorType, volumeDescriptorData, byteEnd = getVolumeDescriptor(isoBytes, byteStart)
-            noVolumeDescriptors += 1
+            volumeDescriptorType, volumeDescriptorData, byteEnd = getISOVolumeDescriptor(isoBytes, byteStart)
+            noISOVolumeDescriptors += 1
+            #sys.stderr.write(str(volumeDescriptorType) + '\n')
             
             if volumeDescriptorType == 1:
                 # Get info from Primary Volume Descriptor (as element object)
@@ -542,6 +554,23 @@ def processImage(image, offset):
                     
                 addProperty(tests, "parsedPrimaryVolumeDescriptor", str(parsedPrimaryVolumeDescriptor))             
             byteStart = byteEnd
+        
+        # Read through UDF volume descriptors (if present)
+        
+        noUDFVolumeDescriptors = 0
+        volumeDescriptorIdentifier = "BEA01"
+                
+        while volumeDescriptorIdentifier in ["CD001", "BEA01", "NSR02", "NSR03", "BOOT2", "TEA01"]:
+            volumeDescriptorIdentifier, volumeDescriptorData, byteEnd = getUDFVolumeDescriptor(isoBytes, byteStart)
+            if volumeDescriptorIdentifier in ["CD001", "BEA01", "NSR02", "NSR03", "BOOT2", "TEA01"]:
+                noUDFVolumeDescriptors += 1
+            #sys.stderr.write(str(volumeDescriptorIdentifier) + '\n')
+       
+            byteStart = byteEnd
+         
+        
+        containsUDF = noUDFVolumeDescriptors > 0       
+        addProperty(tests, "containsUDF", containsUDF) 
                 
         calculatedSizeExpected = False
         
@@ -563,6 +592,7 @@ def processImage(image, offset):
         if containsApplePartitionMap == True and parsedAppleZeroBlock == True:   
             # Calculate from zero block in Apple partition 
             sizeExpectedZeroBlock = (appleZeroBlockInfo.find('blockCount').text * appleZeroBlockInfo.find('blockSize').text)
+            print(str(sizeExpectedZeroBlock ))
 
         if containsAppleMasterDirectoryBlock == True and parsedMasterDirectoryBlock == True:
             # Calculate from Apple Master Directory Block 
