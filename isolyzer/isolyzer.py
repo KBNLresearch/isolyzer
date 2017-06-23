@@ -350,6 +350,14 @@ def parseUDFLogicalVolumeDescriptor(bytesData):
     addProperty(properties, "tagIdentifier", bc.bytesToUShortIntL(bytesData[0:2]))
     addProperty(properties, "descriptorVersion", bc.bytesToUShortIntL(bytesData[2:4]))
     addProperty(properties, "tagSerialNumber", bc.bytesToUShortIntL(bytesData[6:8]))
+    addProperty(properties, "volumeSequenceNumber", bc.bytesToUIntL(bytesData[16:20]))
+    # TODO: really don't know how to interpret descriptorCharacterSet, report as
+    # binhex for now
+    addProperty(properties, "descriptorCharacterSet", bc.bytesToHex(bytesData[64:84]))
+    # TODO: is bytesToText encoding-safe here?
+    addProperty(properties, "logicalVolumeIdentifier", bc.bytesToText(bytesData[84:212]))
+    addProperty(properties, "logicalBlockSize", bc.bytesToUIntL(bytesData[212:216]))
+    addProperty(properties, "domainIdentifier", bc.bytesToText(bytesData[216:248]))
     
     return(properties)
 
