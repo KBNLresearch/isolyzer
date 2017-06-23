@@ -269,16 +269,26 @@ def getISOVolumeDescriptor(bytesData, byteStart):
     
     return(volumeDescriptorType, volumeDescriptorData, byteEnd)
     
-    
-def getUDFVolumeDescriptor(bytesData, byteStart):
+def getExtendedVolumeDescriptor(bytesData, byteStart):
 
-    # Read one 2048-byte UDF volume descriptor and return its descriptor
+    # Read one 2048-byte extended (UDF only) volume descriptor and return its descriptor
     # code and contents
     byteEnd = byteStart + 2048
     volumeDescriptorIdentifier = bc.bytesToText(bytesData[byteStart+1:byteStart+6])
     volumeDescriptorData = bytesData[byteStart:byteEnd]
     
     return(volumeDescriptorIdentifier, volumeDescriptorData, byteEnd)
+
+def getUDFVolumeDescriptor(bytesData, byteStart):
+    byteEnd = byteStart + 2048
+    volumeDescriptorData = bytesData[byteStart:byteEnd]
+    
+    # Descriptor tag
+    descriptorTag  = volumeDescriptorData[0:16]
+    tagIdentifier = bc.bytesToUShortIntL(descriptorTag[0:2]) 
+    descriptorVersion = bc.bytesToUShortIntL(descriptorTag[2:4])
+       
+    return(tagIdentifier, volumeDescriptorData, byteEnd)
     
 def parsePrimaryVolumeDescriptor(bytesData):
 
@@ -457,12 +467,13 @@ def processImage(image, offset):
     try:    
         # Get file size in bytes
         isoFileSize = os.path.getsize(image)
+        
+        # Set no. of sectors to read.
+        #sectorsToRead = 30
+        sectorsToRead = 1000
 
-        # We'll only read first 30 sectors of image, which should be more than enough for
-        # extracting PVD
-        # TODO: is this enough for any possible hybrid FS?
         byteStart = 0  
-        noBytes = min(30*2048,isoFileSize)
+        noBytes = min(sectorsToRead*2048,isoFileSize)
         isoBytes = readFileBytes(image, byteStart,noBytes)
         
         # Does image match byte signature for an ISO 9660 image?
@@ -541,7 +552,6 @@ def processImage(image, offset):
         
             volumeDescriptorType, volumeDescriptorData, byteEnd = getISOVolumeDescriptor(isoBytes, byteStart)
             noISOVolumeDescriptors += 1
-            #sys.stderr.write(str(volumeDescriptorType) + '\n')
             
             if volumeDescriptorType == 1:
                 # Get info from Primary Volume Descriptor (as element object)
@@ -555,22 +565,47 @@ def processImage(image, offset):
                 addProperty(tests, "parsedPrimaryVolumeDescriptor", str(parsedPrimaryVolumeDescriptor))             
             byteStart = byteEnd
         
-        # Read through UDF volume descriptors (if present)
+        # Read through extended (UDF) volume descriptors (if present)
         
-        noUDFVolumeDescriptors = 0
-        volumeDescriptorIdentifier = "BEA01"
+        noExtendedVolumeDescriptors = 0
+        volumeDescriptorIdentifier = "CD001"
                 
         while volumeDescriptorIdentifier in ["CD001", "BEA01", "NSR02", "NSR03", "BOOT2", "TEA01"]:
-            volumeDescriptorIdentifier, volumeDescriptorData, byteEnd = getUDFVolumeDescriptor(isoBytes, byteStart)
-            if volumeDescriptorIdentifier in ["CD001", "BEA01", "NSR02", "NSR03", "BOOT2", "TEA01"]:
-                noUDFVolumeDescriptors += 1
-            #sys.stderr.write(str(volumeDescriptorIdentifier) + '\n')
-       
+            volumeDescriptorIdentifier, volumeDescriptorData, byteEnd = getExtendedVolumeDescriptor(isoBytes, byteStart)
+            if volumeDescriptorIdentifier in ["BEA01", "NSR02", "NSR03", "BOOT2", "TEA01"]:
+                noExtendedVolumeDescriptors += 1
+     
             byteStart = byteEnd
          
-        
-        containsUDF = noUDFVolumeDescriptors > 0       
+        containsUDF = noExtendedVolumeDescriptors > 0       
         addProperty(tests, "containsUDF", containsUDF) 
+
+        if containsUDF == True:
+        
+            # Read Anchor Volume Descriptor Pointer; located at sector 256
+            byteStart = 256*2048
+            anchorVolumeDescriptorPointer = isoBytes[byteStart:byteStart + 512]
+            descriptorTag  = anchorVolumeDescriptorPointer[0:16]
+            mainVolumeDescriptorSequenceExtent = anchorVolumeDescriptorPointer[16:24]
+            reserveVolumeDescriptorSequenceExtent  = anchorVolumeDescriptorPointer[24:32]
+            
+            # Descriptor tag fields
+            tagIdentifier = bc.bytesToUShortIntL(descriptorTag[0:2]) 
+            descriptorVersion = bc.bytesToUShortIntL(descriptorTag[2:4])
+            
+            # Extent fields
+            extentLength = bc.bytesToUIntL(mainVolumeDescriptorSequenceExtent[0:4])
+            extentLocation = bc.bytesToUIntL(mainVolumeDescriptorSequenceExtent[4:8])
+            
+            byteStart = 2048*extentLocation
+            noUDFVolumeDescriptors = 0
+            
+            # Read through main Volume Descriptor Sequence
+            while tagIdentifier != 8 and tagIdentifier != -9999:
+                tagIdentifier, volumeDescriptorData, byteEnd = getUDFVolumeDescriptor(isoBytes, byteStart)
+                sys.stderr.write(str(tagIdentifier) + "\n")
+                noUDFVolumeDescriptors += 1
+                byteStart = byteEnd
                 
         calculatedSizeExpected = False
         
@@ -640,7 +675,7 @@ def processImage(image, offset):
             failureMessage = "runtime error (please report to developers)"        
         else:
             failureMessage = "unknown error (please report to developers)"
-            #raise
+            raise
         printWarning(failureMessage)
 
      # Add success outcome to status info

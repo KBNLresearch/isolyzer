@@ -39,29 +39,45 @@ def bytesToULongLong(bytes):
     # byte order.
     return _doConv(bytes, ">", "Q")
 
-
 def bytesToUInt(bytes):
     # Unpack 4 byte string to unsigned integer, assuming big-endian byte order.
     return _doConv(bytes, ">", "I")
-
 
 def bytesToUShortInt(bytes):
     # Unpack 2 byte string to unsigned short integer, assuming big-endian
     # byte order
     return _doConv(bytes, ">", "H")
 
-
 def bytesToUnsignedChar(bytes):
     # Unpack 1 byte string to unsigned character/integer, assuming big-endian
     # byte order.
     return _doConv(bytes, ">", "B")
-
 
 def bytesToSignedChar(bytes):
     # Unpack 1 byte string to signed character/integer, assuming big-endian
     # byte order.
     return _doConv(bytes, ">", "b")
 
+## Below the little-Endian equivalents of the above functions
+
+def bytesToULongLongL(bytes):
+    # Unpack 8 byte string to unsigned long long integer, assuming little-endian
+    # byte order.
+    return _doConv(bytes, "<", "Q")
+
+def bytesToUIntL(bytes):
+    # Unpack 4 byte string to unsigned integer, assuming little-endian byte order.
+    return _doConv(bytes, "<", "I")
+
+def bytesToUShortIntL(bytes):
+    # Unpack 2 byte string to unsigned short integer, assuming little-endian
+    # byte order
+    return _doConv(bytes, "<", "H")
+
+def bytesToUnsignedCharL(bytes):
+    # Unpack 1 byte string to unsigned character/integer, assuming little-endian
+    # byte order.
+    return _doConv(bytes, "<", "B")
 
 def bytesToInteger(bytes):
     # Unpack byte string of any length to integer.
@@ -88,11 +104,9 @@ def isctrl(c):
     return (ord(c) < 32 or ord(c) == 127)
     # return (0 <= ord(c) <= 8) or (ord(c) == 12) or (14 <= ord(c) < 32)
 
-
 def bytesToHex(bytes):
     # Return hexadecimal ascii representation of bytes
     return binascii.hexlify(bytes)
-
 
 def containsControlCharacters(bytes):
     # Returns True if bytes object contains control characters
@@ -102,7 +116,6 @@ def containsControlCharacters(bytes):
             return(True)
     return(False)
 
-
 def removeControlCharacters(string):
     # Remove control characters from string
     # Adapted from: http://stackoverflow.com/a/19016117/1209004
@@ -110,14 +123,12 @@ def removeControlCharacters(string):
     # Tab, newline and return are part of C0, but are allowed in XML
     allowedChars = [u'\t', u'\n',u'\r']
     return "".join(ch for ch in string if unicodedata.category(ch)[0] != "C" or ch in allowedChars)
-
     
 def removeNullTerminator(bytes):
     # Remove null terminator from bytes
 
     bytesOut = bytes.rstrip(b'\x00')
     return(bytesOut)
-
 
 def bytesToText(bytes):
     # Unpack byte object to text string, assuming big-endian
