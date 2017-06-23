@@ -343,6 +343,16 @@ def parsePrimaryVolumeDescriptor(bytesData):
     
     return(properties)
 
+def parseUDFLogicalVolumeDescriptor(bytesData):
+
+    # Set up elemement object to store extracted properties
+    properties = ET.Element("logicalVolumeDescriptor")
+    addProperty(properties, "tagIdentifier", bc.bytesToUShortIntL(bytesData[0:2]))
+    addProperty(properties, "descriptorVersion", bc.bytesToUShortIntL(bytesData[2:4]))
+    addProperty(properties, "tagSerialNumber", bc.bytesToUShortIntL(bytesData[6:8]))
+    
+    return(properties)
+
 def parseAppleZeroBlock(bytesData):
 
     # Based on code at:
@@ -582,6 +592,10 @@ def processImage(image, offset):
 
         if containsUDF == True:
         
+            # Create udf subelement in properties tree
+            udf = ET.Element("udf")
+            
+        
             # Read Anchor Volume Descriptor Pointer; located at sector 256
             byteStart = 256*2048
             anchorVolumeDescriptorPointer = isoBytes[byteStart:byteStart + 512]
@@ -604,8 +618,24 @@ def processImage(image, offset):
             while tagIdentifier != 8 and tagIdentifier != -9999:
                 tagIdentifier, volumeDescriptorData, byteEnd = getUDFVolumeDescriptor(isoBytes, byteStart)
                 sys.stderr.write(str(tagIdentifier) + "\n")
+                
+                if tagIdentifier == 6:
+                
+                    try:
+                        lvdInfo = parseUDFLogicalVolumeDescriptor(volumeDescriptorData)
+                        udf.append(lvdInfo)
+                        parsedUDFLogicalVolumeDescriptor = True
+                    except:
+                        UDFLogicalVolumeDescriptor = False
+                        raise
+                    
+                    addProperty(tests, "parsedUDFLogicalVolumeDescriptor", str(parsedUDFLogicalVolumeDescriptor))  
+                
                 noUDFVolumeDescriptors += 1
                 byteStart = byteEnd
+            
+            # Append udf element to properties    
+            properties.append(udf)
                 
         calculatedSizeExpected = False
         
