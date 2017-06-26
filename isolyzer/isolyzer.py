@@ -353,11 +353,17 @@ def parseUDFLogicalVolumeDescriptor(bytesData):
     addProperty(properties, "volumeSequenceNumber", bc.bytesToUIntL(bytesData[16:20]))
     # TODO: really don't know how to interpret descriptorCharacterSet, report as
     # binhex for now
-    addProperty(properties, "descriptorCharacterSet", bc.bytesToHex(bytesData[64:84]))
-    # TODO: is bytesToText encoding-safe here?
-    addProperty(properties, "logicalVolumeIdentifier", bc.bytesToText(bytesData[84:212]))
+    # addProperty(properties, "descriptorCharacterSet", bc.bytesToHex(bytesData[64:84]))
+    # TODO: is bytesToText encoding-safe here? Don't really understand this OSTA compressed
+    # Unicode at all!
+    # addProperty(properties, "compressionID", bc.bytesToUnsignedCharL(bytesData[84:85]))
+    # Below line works for UTF-8
+    addProperty(properties, "logicalVolumeIdentifier", bc.bytesToText(bytesData[85:212]))
     addProperty(properties, "logicalBlockSize", bc.bytesToUIntL(bytesData[212:216]))
     addProperty(properties, "domainIdentifier", bc.bytesToText(bytesData[216:248]))
+    addProperty(properties, "mapTableLength", bc.bytesToUIntL(bytesData[264:268]))
+    addProperty(properties, "numberOfPartitionMaps", bc.bytesToUIntL(bytesData[268:272]))
+    addProperty(properties, "implementationIdentifier", bc.bytesToText(bytesData[272:304]))
     
     return(properties)
 
