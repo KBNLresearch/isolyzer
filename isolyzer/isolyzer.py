@@ -373,8 +373,9 @@ def parseUDFLogicalVolumeIntegrityDescriptor(bytesData):
     # Note: parser based on ECMA TR/71 DVD Read-Only Disk - File System Specifications 
     # Link: https://www.ecma-international.org/publications/techreports/E-TR-071.htm
     #
-    # This puts constraint that "sizeTable" describes one partition only. Not 100%
-    # if this applies to *all* DVDs (since TR/71 defines the UDF Bridge format!) 
+    # This puts constraint that *freeSpaceTable* and *sizeTable* describe one partition only!
+    # Not 100% sure this applies to *all* DVDs (since TR/71 only defines UDF Bridge format!) 
+    # If not, make these fields repeatable, iterating over *numberOfPartitions*!
 
     # Set up elemement object to store extracted properties
     properties = ET.Element("logicalVolumeIntegrityDescriptor")
@@ -644,7 +645,6 @@ def processImage(image, offset):
             # Create udf subelement in properties tree
             udf = ET.Element("udf")
             
-        
             # Read Anchor Volume Descriptor Pointer; located at sector 256
             byteStart = 256*2048
             anchorVolumeDescriptorPointer = isoBytes[byteStart:byteStart + 512]
@@ -666,7 +666,6 @@ def processImage(image, offset):
             # Read through main Volume Descriptor Sequence
             while tagIdentifier != 8 and tagIdentifier != -9999:
                 tagIdentifier, volumeDescriptorData, byteEnd = getUDFVolumeDescriptor(isoBytes, byteStart)
-                sys.stderr.write(str(tagIdentifier) + "\n")
                 
                 if tagIdentifier == 6:
                 
@@ -678,7 +677,6 @@ def processImage(image, offset):
                         # Start sector and length of integrity sequence
                         integritySequenceExtentLocation = lvdInfo.find("integritySequenceExtentLocation").text
                         integritySequenceExtentLength = lvdInfo.find("integritySequenceExtentLength").text
-                        #sys.stderr.write(str(integritySequenceExtentLocation) + "\n")
                         
                         try:
                             # Read Logical Volume Integrity Descriptor
@@ -686,6 +684,7 @@ def processImage(image, offset):
                             lvidInfo = parseUDFLogicalVolumeIntegrityDescriptor(lvidVolumeDescriptorData)
                             udf.append(lvidInfo)                        
                             parsedUDFLogicalVolumeIntegrityDescriptor = True
+                                                        
                         except:
                             parsedUDFLogicalVolumeIntegrityDescriptor = False
                             raise
@@ -694,7 +693,8 @@ def processImage(image, offset):
                         parsedUDFLogicalVolumeDescriptor = False
                         raise
                     
-                    addProperty(tests, "parsedUDFLogicalVolumeDescriptor", str(parsedUDFLogicalVolumeDescriptor))  
+                    addProperty(tests, "parsedUDFLogicalVolumeDescriptor", str(parsedUDFLogicalVolumeDescriptor))
+                    addProperty(tests, "parsedUDFLogicalVolumeIntegrityDescriptor", str(parsedUDFLogicalVolumeIntegrityDescriptor))  
                 
                 noUDFVolumeDescriptors += 1
                 byteStart = byteEnd
@@ -704,12 +704,14 @@ def processImage(image, offset):
                 
         calculatedSizeExpected = False
         
-        # Expected ISO size (bytes) can now be calculated from 3 different places: Zero Block, PVD and/or Master Directory Block
+        # Expected ISO size (bytes) can now be calculated from 4 different places: 
+        # PVD, Zero Block, Master Directory Block or UDF descriptors
 
-        # Intialise 3 estimates at 0
+        # Intialise all estimates at 0
         sizeExpectedPVD = 0
         sizeExpectedZeroBlock = 0
         sizeExpectedMDB = 0
+        sizeExpectedUDF = 0
 
         if parsedPrimaryVolumeDescriptor == True:
             # Calculate from Primary Volume Descriptor
@@ -727,9 +729,15 @@ def processImage(image, offset):
         if containsAppleMasterDirectoryBlock == True and parsedMasterDirectoryBlock == True:
             # Calculate from Apple Master Directory Block 
             sizeExpectedMDB = (masterDirectoryBlockInfo.find('blockCount').text * masterDirectoryBlockInfo.find('blockSize').text)
+            
+        if containsUDF == True and parsedUDFLogicalVolumeDescriptor == True and parsedUDFLogicalVolumeIntegrityDescriptor == True:
+            sizeExpectedUDF = (lvidInfo.find('sizeTable').text * lvdInfo.find('logicalBlockSize').text)
+            sys.stderr.write(str(lvidInfo.find('sizeTable').text) + "\n")
+            sys.stderr.write(str(lvdInfo.find('logicalBlockSize').text) + "\n")
+            sys.stderr.write(str(sizeExpectedUDF) + "\n")
 
         # Assuming here that best estimate is largest out of the above values
-        sizeExpected = max([sizeExpectedPVD, sizeExpectedZeroBlock, sizeExpectedMDB])
+        sizeExpected = max([sizeExpectedPVD, sizeExpectedZeroBlock, sizeExpectedMDB, sizeExpectedUDF])
 
         # Size difference
         diffSize = isoFileSize - sizeExpected
