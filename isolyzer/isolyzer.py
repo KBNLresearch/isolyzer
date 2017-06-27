@@ -364,9 +364,38 @@ def parseUDFLogicalVolumeDescriptor(bytesData):
     addProperty(properties, "mapTableLength", bc.bytesToUIntL(bytesData[264:268]))
     addProperty(properties, "numberOfPartitionMaps", bc.bytesToUIntL(bytesData[268:272]))
     addProperty(properties, "implementationIdentifier", bc.bytesToText(bytesData[272:304]))
+    addProperty(properties, "integritySequenceExtentLength", bc.bytesToUIntL(bytesData[432:436]))
+    addProperty(properties, "integritySequenceExtentLocation", bc.bytesToUIntL(bytesData[436:440]))
+    return(properties)
+    
+def parseUDFLogicalVolumeIntegrityDescriptor(bytesData):
+
+    # Set up elemement object to store extracted properties
+    properties = ET.Element("logicalVolumeIntegrityDescriptor")
+    addProperty(properties, "tagIdentifier", bc.bytesToUShortIntL(bytesData[0:2]))
+    addProperty(properties, "descriptorVersion", bc.bytesToUShortIntL(bytesData[2:4]))
+    addProperty(properties, "tagSerialNumber", bc.bytesToUShortIntL(bytesData[6:8]))
+    
+    # Read timestamp fields and reformat to date/time string (ignoring centiseconds ... microseconds)
+    year = bc.bytesToUShortIntL(bytesData[18:20])
+    month = bc.bytesToUnsignedCharL(bytesData[20:21])
+    day = bc.bytesToUnsignedCharL(bytesData[21:22])
+    hour = bc.bytesToUnsignedCharL(bytesData[22:23])
+    minute = bc.bytesToUnsignedCharL(bytesData[23:24])
+    second = bc.bytesToUnsignedCharL(bytesData[24:25])
+    dateString = "%d/%02d/%02d" % (year, month, day)
+    timeString = "%02d:%02d:%02d" % (hour, minute, second)
+    dateTimeString = "%s, %s" % (dateString, timeString)
+    addProperty(properties, "timeStamp", dateTimeString)
+    
+    addProperty(properties, "integrityType", bc.bytesToUIntL(bytesData[28:32]))
+    addProperty(properties, "numberOfPartitions", bc.bytesToUIntL(bytesData[72:76]))
+    addProperty(properties, "lengthOfImplementationUse", bc.bytesToUIntL(bytesData[76:80]))
+    addProperty(properties, "freeSpaceTable", bc.bytesToUIntL(bytesData[80:84]))
+    addProperty(properties, "sizeTable", bc.bytesToUIntL(bytesData[84:88]))
     
     return(properties)
-
+    
 def parseAppleZeroBlock(bytesData):
 
     # Based on code at:
@@ -639,8 +668,24 @@ def processImage(image, offset):
                         lvdInfo = parseUDFLogicalVolumeDescriptor(volumeDescriptorData)
                         udf.append(lvdInfo)
                         parsedUDFLogicalVolumeDescriptor = True
+                        
+                        # Start sector and length of integrity sequence
+                        integritySequenceExtentLocation = lvdInfo.find("integritySequenceExtentLocation").text
+                        integritySequenceExtentLength = lvdInfo.find("integritySequenceExtentLength").text
+                        #sys.stderr.write(str(integritySequenceExtentLocation) + "\n")
+                        
+                        try:
+                            # Read Logical Volume Integrity Descriptor
+                            lvidTagIdentifier, lvidVolumeDescriptorData, lVIDbyteEnd = getUDFVolumeDescriptor(isoBytes, 2048* integritySequenceExtentLocation)
+                            lvidInfo = parseUDFLogicalVolumeIntegrityDescriptor(lvidVolumeDescriptorData)
+                            udf.append(lvidInfo)                        
+                            parsedUDFLogicalVolumeIntegrityDescriptor = True
+                        except:
+                            parsedUDFLogicalVolumeIntegrityDescriptor = False
+                            raise
+                        
                     except:
-                        UDFLogicalVolumeDescriptor = False
+                        parsedUDFLogicalVolumeDescriptor = False
                         raise
                     
                     addProperty(tests, "parsedUDFLogicalVolumeDescriptor", str(parsedUDFLogicalVolumeDescriptor))  
