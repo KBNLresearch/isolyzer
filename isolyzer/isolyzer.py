@@ -370,6 +370,12 @@ def parseUDFLogicalVolumeDescriptor(bytesData):
     
 def parseUDFLogicalVolumeIntegrityDescriptor(bytesData):
 
+    # Note: parser based on ECMA TR/71 DVD Read-Only Disk - File System Specifications 
+    # Link: https://www.ecma-international.org/publications/techreports/E-TR-071.htm
+    #
+    # This puts constraint that "sizeTable" describes one partition only. Not 100%
+    # if this applies to *all* DVDs (since TR/71 defines the UDF Bridge format!) 
+
     # Set up elemement object to store extracted properties
     properties = ET.Element("logicalVolumeIntegrityDescriptor")
     addProperty(properties, "tagIdentifier", bc.bytesToUShortIntL(bytesData[0:2]))
