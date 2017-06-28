@@ -421,6 +421,7 @@ def parseAppleZeroBlock(bytesData):
     addProperty(properties, "driverDescriptorBlockStart", bc.bytesToUInt(bytesData[82:86]))
     addProperty(properties, "driverDescriptorBlockCount", bc.bytesToUShortInt(bytesData[86:88]))
     addProperty(properties, "driverDescriptorSystemType", bc.bytesToUShortInt(bytesData[88:90]))
+        
     return(properties)
 
 def parseApplePartitionMap(bytesData):
@@ -729,7 +730,6 @@ def processImage(image, offset):
         if containsApplePartitionMap == True and parsedAppleZeroBlock == True:   
             # Calculate from zero block in Apple partition 
             sizeExpectedZeroBlock = (appleZeroBlockInfo.find('blockCount').text * appleZeroBlockInfo.find('blockSize').text)
-            print(str(sizeExpectedZeroBlock ))
 
         if containsAppleMasterDirectoryBlock == True and parsedMasterDirectoryBlock == True:
             # Calculate from Apple Master Directory Block 
