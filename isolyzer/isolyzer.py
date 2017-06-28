@@ -597,7 +597,6 @@ def processImage(image, offset):
             
             addProperty(tests, "parsedMasterDirectoryBlock", str(parsedMasterDirectoryBlock))
 
-            
         # This is a dummy value
         volumeDescriptorType = -1
         
@@ -737,9 +736,6 @@ def processImage(image, offset):
             
         if containsUDF == True and parsedUDFLogicalVolumeDescriptor == True and parsedUDFLogicalVolumeIntegrityDescriptor == True:
             sizeExpectedUDF = (lvidInfo.find('sizeTable').text * lvdInfo.find('logicalBlockSize').text)
-            sys.stderr.write(str(lvidInfo.find('sizeTable').text) + "\n")
-            sys.stderr.write(str(lvdInfo.find('logicalBlockSize').text) + "\n")
-            sys.stderr.write(str(sizeExpectedUDF) + "\n")
 
         # Assuming here that best estimate is largest out of the above values
         sizeExpected = max([sizeExpectedPVD, sizeExpectedZeroBlock, sizeExpectedMDB, sizeExpectedUDF])
