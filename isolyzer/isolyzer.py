@@ -520,7 +520,6 @@ def processImage(image, offset):
     tests = properties = ET.Element("tests")
     properties = ET.Element("properties")
     
-
     # Initialise success flag
     success = True
    
@@ -537,7 +536,8 @@ def processImage(image, offset):
         isoBytes = readFileBytes(image, byteStart,noBytes)
         
         # Does image match byte signature for an ISO 9660 image?
-        addProperty(tests, "containsISO9660Signature", signatureCheck(isoBytes))
+        containsISO9660Signature = signatureCheck(isoBytes)
+        addProperty(tests, "containsISO9660Signature", containsISO9660Signature)
         
         # Does image contain Apple Partition Map, HFS Header or Master Directory Block?
         containsApplePartitionMap = isoBytes[0:2] == b'\x45\x52' and isoBytes[512:514] == b'\x50\x4D'
@@ -602,28 +602,33 @@ def processImage(image, offset):
         
         # Count volume descriptors
         noISOVolumeDescriptors = 0
+        
+        # Default value
+        parsedPrimaryVolumeDescriptor = False
 
         # Skip to byte 32768, which is where actual ISO 9660 fields start
         byteStart = 32768
-
-        # Read through all 2048-byte ISO volume descriptors, until Volume Descriptor Set Terminator is found
-        # (or unexpected EOF, which will result in -9999 value for volumeDescriptorType)
-        while volumeDescriptorType != 255 and volumeDescriptorType != -9999:
         
-            volumeDescriptorType, volumeDescriptorData, byteEnd = getISOVolumeDescriptor(isoBytes, byteStart)
-            noISOVolumeDescriptors += 1
+        if containsISO9660Signature == True:
+
+            # Read through all 2048-byte ISO volume descriptors, until Volume Descriptor Set Terminator is found
+            # (or unexpected EOF, which will result in -9999 value for volumeDescriptorType)
+            while volumeDescriptorType != 255 and volumeDescriptorType != -9999:
             
-            if volumeDescriptorType == 1:
-                # Get info from Primary Volume Descriptor (as element object)
-                try:
-                    pvdInfo = parsePrimaryVolumeDescriptor(volumeDescriptorData)
-                    properties.append(pvdInfo)
-                    parsedPrimaryVolumeDescriptor = True
-                except:
-                    parsedPrimaryVolumeDescriptor = False
-                    
-                addProperty(tests, "parsedPrimaryVolumeDescriptor", str(parsedPrimaryVolumeDescriptor))             
-            byteStart = byteEnd
+                volumeDescriptorType, volumeDescriptorData, byteEnd = getISOVolumeDescriptor(isoBytes, byteStart)
+                noISOVolumeDescriptors += 1
+                
+                if volumeDescriptorType == 1:
+                    # Get info from Primary Volume Descriptor (as element object)
+                    try:
+                        pvdInfo = parsePrimaryVolumeDescriptor(volumeDescriptorData)
+                        properties.append(pvdInfo)
+                        parsedPrimaryVolumeDescriptor = True
+                    except:
+                        parsedPrimaryVolumeDescriptor = False
+                        
+                    addProperty(tests, "parsedPrimaryVolumeDescriptor", str(parsedPrimaryVolumeDescriptor))             
+                byteStart = byteEnd
         
         # Read through extended (UDF) volume descriptors (if present)
         
