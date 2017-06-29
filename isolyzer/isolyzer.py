@@ -682,7 +682,7 @@ def processImage(image, offset):
             # Read through main Volume Descriptor Sequence
             while tagIdentifier != 8 and tagIdentifier != -9999:
                 tagIdentifier, volumeDescriptorData, byteEnd = getUDFVolumeDescriptor(isoBytes, byteStart)
-                sys.stderr.write(str(tagIdentifier) + "\n")
+                #sys.stderr.write(str(tagIdentifier) + "\n")
                 
                 if tagIdentifier == 6:
                 
@@ -706,11 +706,11 @@ def processImage(image, offset):
                                                         
                         except:
                             parsedUDFLogicalVolumeIntegrityDescriptor = False
-                            raise
+                            #raise
                         
                     except:
                         parsedUDFLogicalVolumeDescriptor = False
-                        raise
+                        #raise
                     
                     addProperty(tests, "parsedUDFLogicalVolumeDescriptor", str(parsedUDFLogicalVolumeDescriptor))
                     addProperty(tests, "parsedUDFLogicalVolumeIntegrityDescriptor", str(parsedUDFLogicalVolumeIntegrityDescriptor))
@@ -726,7 +726,7 @@ def processImage(image, offset):
                                                 
                     except:
                         parsedUDFPartitionDescriptor = False
-                        raise
+                        #raise
                     
                     addProperty(tests, "parsedUDFPartitionDescriptor", str(parsedUDFPartitionDescriptor))
  
@@ -816,7 +816,7 @@ def processImage(image, offset):
             failureMessage = "runtime error (please report to developers)"        
         else:
             failureMessage = "unknown error (please report to developers)"
-            raise
+            #raise
         printWarning(failureMessage)
 
      # Add success outcome to status info
