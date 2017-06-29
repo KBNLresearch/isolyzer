@@ -403,6 +403,23 @@ def parseUDFLogicalVolumeIntegrityDescriptor(bytesData):
     
     return(properties)
     
+def parseUDFPartitionDescriptor(bytesData):
+
+    # Set up elemement object to store extracted properties
+    properties = ET.Element("partitionDescriptor")
+    addProperty(properties, "tagIdentifier", bc.bytesToUShortIntL(bytesData[0:2]))
+    addProperty(properties, "descriptorVersion", bc.bytesToUShortIntL(bytesData[2:4]))
+    addProperty(properties, "tagSerialNumber", bc.bytesToUShortIntL(bytesData[6:8]))
+      
+    addProperty(properties, "volumeDescriptorSequenceNumber", bc.bytesToUIntL(bytesData[16:20]))
+    addProperty(properties, "partitionNumber", bc.bytesToUShortIntL(bytesData[22:24]))
+    addProperty(properties, "accessType", bc.bytesToUIntL(bytesData[184:188]))
+    addProperty(properties, "partitionStartingLocation", bc.bytesToUIntL(bytesData[188:192]))
+    addProperty(properties, "partitionLength", bc.bytesToUIntL(bytesData[192:196]))
+
+    return(properties)
+
+
 def parseAppleZeroBlock(bytesData):
 
     # Based on code at:
@@ -671,8 +688,11 @@ def processImage(image, offset):
             # Read through main Volume Descriptor Sequence
             while tagIdentifier != 8 and tagIdentifier != -9999:
                 tagIdentifier, volumeDescriptorData, byteEnd = getUDFVolumeDescriptor(isoBytes, byteStart)
+                sys.stderr.write(str(tagIdentifier) + "\n")
                 
                 if tagIdentifier == 6:
+                
+                    # Logical Volume descriptor
                 
                     try:
                         lvdInfo = parseUDFLogicalVolumeDescriptor(volumeDescriptorData)
@@ -699,7 +719,23 @@ def processImage(image, offset):
                         raise
                     
                     addProperty(tests, "parsedUDFLogicalVolumeDescriptor", str(parsedUDFLogicalVolumeDescriptor))
-                    addProperty(tests, "parsedUDFLogicalVolumeIntegrityDescriptor", str(parsedUDFLogicalVolumeIntegrityDescriptor))  
+                    addProperty(tests, "parsedUDFLogicalVolumeIntegrityDescriptor", str(parsedUDFLogicalVolumeIntegrityDescriptor))
+                    
+                if tagIdentifier == 5:
+                    
+                    # Partition Descriptor
+                
+                    try:
+                        pdInfo = parseUDFPartitionDescriptor(volumeDescriptorData)
+                        udf.append(pdInfo)
+                        parsedUDFPartitionDescriptor = True
+                                                
+                    except:
+                        parsedUDFPartitionDescriptor = False
+                        raise
+                    
+                    addProperty(tests, "parsedUDFPartitionDescriptor", str(parsedUDFPartitionDescriptor))
+ 
                 
                 noUDFVolumeDescriptors += 1
                 byteStart = byteEnd
