@@ -546,9 +546,11 @@ def processImage(image, offset):
         isoFileSize = os.path.getsize(image)
         
         # Set no. of sectors to read.
-        #sectorsToRead = 30
         sectorsToRead = 1000
-
+        
+        # Flag indicates whether a file system could be detected at all
+        containsSupportedFileSystem = False
+        
         byteStart = 0  
         noBytes = min(sectorsToRead*2048,isoFileSize)
         isoBytes = readFileBytes(image, byteStart,noBytes)
@@ -567,6 +569,8 @@ def processImage(image, offset):
         addProperty(tests, "containsAppleMasterDirectoryBlock", containsAppleMasterDirectoryBlock)
         
         if containsApplePartitionMap == True:
+        
+            containsSupportedFileSystem = True
                    
             # Based on description at: https://en.wikipedia.org/wiki/Apple_Partition_Map#Layout
             # and https://opensource.apple.com/source/IOStorageFamily/IOStorageFamily-116/IOApplePartitionScheme.h
@@ -582,28 +586,14 @@ def processImage(image, offset):
             
             addProperty(tests, "parsedAppleZeroBlock", str(parsedAppleZeroBlock))
             
-            """
-            # Get partition map data
-            applePartitionMapData = isoBytes[512:1024]
-            # Parse partition map
-            applePartitionMapInfo = parseApplePartitionMap(applePartitionMapData)
-            properties.append(applePartitionMapInfo)
-            
-            # TODO
-            # Not entirely clear how references between multiple partition map entries works, offset to next PM seems to be
-            #  offset_current_PM +  (partitionBlockStart * blockSize)
-            
-            # TEST
-            applePartitionMapData = isoBytes[1024:1548]
-            # Parse partition map
-            applePartitionMapInfo = parseApplePartitionMap(applePartitionMapData)
-            properties.append(applePartitionMapInfo)
-            """
         if containsAppleHFSHeader == True:
             # Extract some info from HFS header
             pass
         
         if containsAppleMasterDirectoryBlock == True:
+        
+            containsSupportedFileSystem = True
+            
             masterDirectoryBlockData = isoBytes[1024:1536] # Size of MDB?
             try:
                 masterDirectoryBlockInfo = parseMasterDirectoryBlock(masterDirectoryBlockData)
@@ -627,6 +617,8 @@ def processImage(image, offset):
         byteStart = 32768
         
         if containsISO9660Signature == True:
+        
+            containsSupportedFileSystem = True
 
             # Read through all 2048-byte ISO volume descriptors, until Volume Descriptor Set Terminator is found
             # (or unexpected EOF, which will result in -9999 value for volumeDescriptorType)
@@ -663,6 +655,8 @@ def processImage(image, offset):
         addProperty(tests, "containsUDF", containsUDF) 
 
         if containsUDF == True:
+        
+            containsSupportedFileSystem = True
         
             # Create udf subelement in properties tree
             udf = ET.Element("udf")
@@ -742,6 +736,8 @@ def processImage(image, offset):
             
             # Append udf element to properties    
             properties.append(udf)
+        
+        addProperty(tests, "containsSupportedFileSystem", str(containsSupportedFileSystem))
                 
         calculatedSizeExpected = False
         
@@ -764,23 +760,28 @@ def processImage(image, offset):
                 
         if containsApplePartitionMap == True and parsedAppleZeroBlock == True:   
             # Calculate from zero block in Apple partition 
-            sizeExpectedZeroBlock = (appleZeroBlockInfo.find('blockCount').text * appleZeroBlockInfo.find('blockSize').text)
+            sizeExpectedZeroBlock = appleZeroBlockInfo.find('blockCount').text * appleZeroBlockInfo.find('blockSize').text
 
         if containsAppleMasterDirectoryBlock == True and parsedMasterDirectoryBlock == True:
             # Calculate from Apple Master Directory Block 
-            sizeExpectedMDB = (masterDirectoryBlockInfo.find('blockCount').text * masterDirectoryBlockInfo.find('blockSize').text)
+            sizeExpectedMDB = masterDirectoryBlockInfo.find('blockCount').text * masterDirectoryBlockInfo.find('blockSize').text
             
         if containsUDF == True and parsedUDFLogicalVolumeDescriptor == True and parsedUDFLogicalVolumeIntegrityDescriptor == True:
-            sizeExpectedUDF = (lvidInfo.find('sizeTable').text * lvdInfo.find('logicalBlockSize').text)
+            # For UDF estimating the expected file size is not straightforward, because the fields in the Partition Descriptor and the
+            # Integrity Descriptor exclude the size occupied by descriptors before and after the partition. The number of sectors *before*
+            # the partition equals (partitionStartingLocation - 1). The number of sectors *after* the partition is more difficult to 
+            # establish, but it must be at least 1 (Anchor Volume Descriptor Pointer). So a conservative estimate is:
+            #
+            # number of sectors =  partitionLength + partitionStartingLocation
+            # 
+            # In reality this estimate may be too low because of additional descriptors after the partition.
+            sizeExpectedUDF = (pdInfo.find('partitionLength').text +  pdInfo.find('partitionStartingLocation').text)* lvdInfo.find('logicalBlockSize').text
 
         # Assuming here that best estimate is largest out of the above values
         sizeExpected = max([sizeExpectedPVD, sizeExpectedZeroBlock, sizeExpectedMDB, sizeExpectedUDF])
 
         # Size difference
         diffSize = isoFileSize - sizeExpected
-
-        # Difference expressed as number of sectors
-        #diffSectors = diffSize / 2048
         
         imageLargerThanExpected = False
         imageSmallerThanExpected = False
