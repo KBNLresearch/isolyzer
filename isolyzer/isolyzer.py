@@ -481,6 +481,20 @@ def parseMasterDirectoryBlock(bytesData):
     addProperty(properties, "blockCount", bc.bytesToUInt(bytesData[20:24]))
     return(properties)
 
+def parseHFSPlusHeader(bytesData):
+
+    # Based on https://opensource.apple.com/source/xnu/xnu-344/bsd/hfs/hfs_format.h
+    
+    # Set up elemement object to store extracted properties
+    properties = ET.Element("hfsPlusheader")
+             
+    addProperty(properties, "signature", bc.bytesToText(bytesData[0:2]))
+    addProperty(properties, "version", bc.bytesToUShortInt(bytesData[2:4]))
+    addProperty(properties, "blockSize", bc.bytesToUInt(bytesData[40:44]))
+    addProperty(properties, "blockCount", bc.bytesToUInt(bytesData[44:48]))
+    
+    return(properties)
+
 def parseCommandLine():
     # Add arguments
     parser.add_argument('ISOImage', 
@@ -559,13 +573,15 @@ def processImage(image, offset):
         containsISO9660Signature = signatureCheck(isoBytes)
         addProperty(tests, "containsISO9660Signature", containsISO9660Signature)
         
-        # Does image contain Apple Partition Map, HFS Header or Master Directory Block?
+        # Does image contain Apple Partition Map, HFS (Plus) Header or Master Directory Block?
         containsApplePartitionMap = isoBytes[0:2] == b'\x45\x52' and isoBytes[512:514] == b'\x50\x4D'
-        containsAppleHFSHeader = isoBytes[1024:1026] == b'\x4C\x4B'
+        containsHFSHeader = isoBytes[1024:1026] == b'\x4C\x4B'
+        containsHFSPlusHeader = isoBytes[1024:1026] in[b'\x48\x2B', b'\x48\x58']
         containsAppleMasterDirectoryBlock = isoBytes[1024:1026] in [b'\x42\x44',b'\xd2\xd7']        
 
         addProperty(tests, "containsApplePartitionMap", containsApplePartitionMap)
-        addProperty(tests, "containsAppleHFSHeader", containsAppleHFSHeader)
+        addProperty(tests, "containsHFSHeader", containsHFSHeader)
+        addProperty(tests, "containsHFSPlusHeader", containsHFSPlusHeader)
         addProperty(tests, "containsAppleMasterDirectoryBlock", containsAppleMasterDirectoryBlock)
         
         if containsApplePartitionMap == True:
@@ -586,10 +602,26 @@ def processImage(image, offset):
             
             addProperty(tests, "parsedAppleZeroBlock", str(parsedAppleZeroBlock))
             
-        if containsAppleHFSHeader == True:
-            # Extract some info from HFS header
-            pass
+        if containsHFSHeader == True:
         
+            containsSupportedFileSystem = True
+            hfsHeaderData = isoBytes[1024:1536]
+            pass
+            
+        if containsHFSPlusHeader == True:
+                        
+            containsSupportedFileSystem = True
+                      
+            hfsPlusHeaderData = isoBytes[1024:1536]
+            try:
+                hfsPlusHeaderInfo = parseHFSPlusHeader(hfsPlusHeaderData)
+                properties.append(hfsPlusHeaderInfo)
+                parsedHFSPlusHeader = True
+            except:
+                parsedHFSPlusHeader = False
+            
+            addProperty(tests, "parsedHFSPlusHeader", str(parsedHFSPlusHeader))
+                    
         if containsAppleMasterDirectoryBlock == True:
         
             containsSupportedFileSystem = True
@@ -741,13 +773,14 @@ def processImage(image, offset):
                 
         calculatedSizeExpected = False
         
-        # Expected ISO size (bytes) can now be calculated from 4 different places: 
-        # PVD, Zero Block, Master Directory Block or UDF descriptors
+        # Expected ISO size (bytes) can now be calculated from 5 different places: 
+        # PVD, Zero Block, Master Directory Block, HFS Plus header or UDF descriptors
 
         # Intialise all estimates at 0
         sizeExpectedPVD = 0
         sizeExpectedZeroBlock = 0
         sizeExpectedMDB = 0
+        sizeExpectedHFSPlus = 0
         sizeExpectedUDF = 0
 
         if parsedPrimaryVolumeDescriptor == True:
@@ -766,6 +799,10 @@ def processImage(image, offset):
             # Calculate from Apple Master Directory Block 
             sizeExpectedMDB = masterDirectoryBlockInfo.find('blockCount').text * masterDirectoryBlockInfo.find('blockSize').text
             
+        if containsHFSPlusHeader == True and parsedHFSPlusHeader == True:
+            # Calculate from HFS Plus header 
+            sizeExpectedHFSPlus = hfsPlusHeaderInfo.find('blockCount').text * hfsPlusHeaderInfo.find('blockSize').text
+            
         if containsUDF == True and parsedUDFLogicalVolumeDescriptor == True and parsedUDFLogicalVolumeIntegrityDescriptor == True:
             # For UDF estimating the expected file size is not straightforward, because the fields in the Partition Descriptor and the
             # Integrity Descriptor exclude the size occupied by descriptors before and after the partition. The number of sectors *before*
@@ -778,7 +815,7 @@ def processImage(image, offset):
             sizeExpectedUDF = (pdInfo.find('partitionLength').text +  pdInfo.find('partitionStartingLocation').text)* lvdInfo.find('logicalBlockSize').text
 
         # Assuming here that best estimate is largest out of the above values
-        sizeExpected = max([sizeExpectedPVD, sizeExpectedZeroBlock, sizeExpectedMDB, sizeExpectedUDF])
+        sizeExpected = max([sizeExpectedPVD, sizeExpectedZeroBlock, sizeExpectedMDB, sizeExpectedHFSPlus, sizeExpectedUDF])
 
         # Size difference
         diffSize = isoFileSize - sizeExpected
