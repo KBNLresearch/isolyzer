@@ -419,7 +419,6 @@ def parseUDFPartitionDescriptor(bytesData):
 
     return(properties)
 
-
 def parseAppleZeroBlock(bytesData):
 
     # Based on code at:
@@ -472,6 +471,7 @@ def parseApplePartitionMap(bytesData):
 def parseMasterDirectoryBlock(bytesData):
     # Based on description at:
     # https://developer.apple.com/legacy/library/documentation/mac/Files/Files-102.html
+    # and https://github.com/libyal/libfshfs/blob/master/documentation/Hierarchical%20File%20System%20(HFS).asciidoc
 
     # Set up elemement object to store extracted properties
     properties = ET.Element("masterDirectoryBlock")
@@ -479,14 +479,15 @@ def parseMasterDirectoryBlock(bytesData):
     addProperty(properties, "signature", bc.bytesToText(bytesData[0:2]))
     addProperty(properties, "blockSize", bc.bytesToUShortInt(bytesData[18:20]))
     addProperty(properties, "blockCount", bc.bytesToUInt(bytesData[20:24]))
+    addProperty(properties, "volumeName", bc.bytesToText(bytesData[37:63]))
     return(properties)
 
-def parseHFSPlusHeader(bytesData):
+def parseHFSPlusVolumeHeader(bytesData):
 
     # Based on https://opensource.apple.com/source/xnu/xnu-344/bsd/hfs/hfs_format.h
     
     # Set up elemement object to store extracted properties
-    properties = ET.Element("hfsPlusheader")
+    properties = ET.Element("hfsPlusVolumeheader")
              
     addProperty(properties, "signature", bc.bytesToText(bytesData[0:2]))
     addProperty(properties, "version", bc.bytesToUShortInt(bytesData[2:4]))
@@ -573,15 +574,14 @@ def processImage(image, offset):
         containsISO9660Signature = signatureCheck(isoBytes)
         addProperty(tests, "containsISO9660Signature", containsISO9660Signature)
         
-        # Does image contain Apple Partition Map, HFS (Plus) Header or Master Directory Block?
+        # Does image contain Apple Partition Map, HFS Plus Header or Master Directory Block?
+        # Note: the HFS Plus Header  
         containsApplePartitionMap = isoBytes[0:2] == b'\x45\x52' and isoBytes[512:514] == b'\x50\x4D'
-        containsHFSHeader = isoBytes[1024:1026] == b'\x4C\x4B'
-        containsHFSPlusHeader = isoBytes[1024:1026] in[b'\x48\x2B', b'\x48\x58']
+        containsHFSPlusVolumeHeader = isoBytes[1024:1026] in[b'\x48\x2B', b'\x48\x58']
         containsAppleMasterDirectoryBlock = isoBytes[1024:1026] in [b'\x42\x44',b'\xd2\xd7']        
-
+  
         addProperty(tests, "containsApplePartitionMap", containsApplePartitionMap)
-        addProperty(tests, "containsHFSHeader", containsHFSHeader)
-        addProperty(tests, "containsHFSPlusHeader", containsHFSPlusHeader)
+        addProperty(tests, "containsHFSPlusVolumeHeader", containsHFSPlusVolumeHeader)
         addProperty(tests, "containsAppleMasterDirectoryBlock", containsAppleMasterDirectoryBlock)
         
         if containsApplePartitionMap == True:
@@ -602,25 +602,20 @@ def processImage(image, offset):
             
             addProperty(tests, "parsedAppleZeroBlock", str(parsedAppleZeroBlock))
             
-        if containsHFSHeader == True:
-        
-            containsSupportedFileSystem = True
-            hfsHeaderData = isoBytes[1024:1536]
-            pass
             
-        if containsHFSPlusHeader == True:
+        if containsHFSPlusVolumeHeader == True:
                         
             containsSupportedFileSystem = True
                       
             hfsPlusHeaderData = isoBytes[1024:1536]
             try:
-                hfsPlusHeaderInfo = parseHFSPlusHeader(hfsPlusHeaderData)
+                hfsPlusHeaderInfo = parseHFSPlusVolumeHeader(hfsPlusHeaderData)
                 properties.append(hfsPlusHeaderInfo)
-                parsedHFSPlusHeader = True
+                parsedHFSPlusVolumeHeader = True
             except:
-                parsedHFSPlusHeader = False
+                parsedHFSPlusVolumeHeader = False
             
-            addProperty(tests, "parsedHFSPlusHeader", str(parsedHFSPlusHeader))
+            addProperty(tests, "parsedHFSPlusVolumeHeader", str(parsedHFSPlusVolumeHeader))
                     
         if containsAppleMasterDirectoryBlock == True:
         
@@ -799,8 +794,8 @@ def processImage(image, offset):
             # Calculate from Apple Master Directory Block 
             sizeExpectedMDB = masterDirectoryBlockInfo.find('blockCount').text * masterDirectoryBlockInfo.find('blockSize').text
             
-        if containsHFSPlusHeader == True and parsedHFSPlusHeader == True:
-            # Calculate from HFS Plus header 
+        if containsHFSPlusVolumeHeader == True and parsedHFSPlusVolumeHeader == True:
+            # Calculate from HFS Plus volume Header 
             sizeExpectedHFSPlus = hfsPlusHeaderInfo.find('blockCount').text * hfsPlusHeaderInfo.find('blockSize').text
             
         if containsUDF == True and parsedUDFLogicalVolumeDescriptor == True and parsedUDFLogicalVolumeIntegrityDescriptor == True:
