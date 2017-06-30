@@ -575,7 +575,7 @@ def processImage(image, offset):
         addProperty(tests, "containsISO9660Signature", containsISO9660Signature)
         
         # Does image contain Apple Partition Map, HFS Plus Header or Master Directory Block?
-        # Note: the HFS Plus Header  
+        # (Note: the HFS Plus Header replaces the Master Directory Block of HFS) 
         containsApplePartitionMap = isoBytes[0:2] == b'\x45\x52' and isoBytes[512:514] == b'\x50\x4D'
         containsHFSPlusVolumeHeader = isoBytes[1024:1026] in[b'\x48\x2B', b'\x48\x58']
         containsAppleMasterDirectoryBlock = isoBytes[1024:1026] in [b'\x42\x44',b'\xd2\xd7']        
