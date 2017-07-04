@@ -756,9 +756,7 @@ def processImage(image, offset):
         
             # Create element to store properties of UDF filesystem
             udf = ET.Element("fileSystem")
-        
-            addProperty(fileSystems, "fileSystem", "UDF") 
-                    
+                            
             # Read Anchor Volume Descriptor Pointer; located at sector 256
             byteStart = 256*2048
             anchorVolumeDescriptorPointer = isoBytes[byteStart:byteStart + 512]
