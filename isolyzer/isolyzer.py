@@ -41,6 +41,10 @@ else:
 
 scriptPath, scriptName = os.path.split(sys.argv[0])
 
+# scriptName is empty when called from Java/Jython, so this needs a fix
+if len(scriptName) == 0:
+    scriptName = 'isolyzer'
+
 __version__ = '0.3.0'
 
 # Create parser
@@ -525,9 +529,14 @@ def processImage(image, offset):
     # Create root element for image
     imageRoot = ET.Element('image')
 
-    # Create elements for storing file and status meta info
+    # Create elements for storing tool, file and status meta info
+    toolInfo = ET.Element('toolInfo')
     fileInfo = ET.Element('fileInfo')
     statusInfo = ET.Element('statusInfo')
+    
+    # Some info on isolyzer and version used
+    addProperty(toolInfo, "toolName", scriptName)
+    addProperty(toolInfo, "toolVersion", __version__)
 
     # File name and path 
     fileName = os.path.basename(image)
@@ -925,7 +934,8 @@ def processImage(image, offset):
     addProperty(statusInfo, "success", str(success))
     if success == False:
         addProperty(statusInfo, "failureMessage", failureMessage)
-   
+        
+    imageRoot.append(toolInfo)
     imageRoot.append(fileInfo)
     imageRoot.append(statusInfo)
     imageRoot.append(tests)
