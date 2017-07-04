@@ -552,6 +552,7 @@ def processImage(image, offset):
     
     tests = properties = ET.Element("tests")
     properties = ET.Element("properties")
+    fileSystems = ET.Element("fileSystems")
     
     # Initialise success flag
     success = True
@@ -565,6 +566,8 @@ def processImage(image, offset):
         
         # Flag indicates whether a file system could be detected at all
         containsSupportedFileSystem = False
+        containsAppleMasterDirectoryBlock = False
+        containsHFSPlusVolumeHeader = False
         
         byteStart = 0  
         noBytes = min(sectorsToRead*2048,isoFileSize)
@@ -572,13 +575,32 @@ def processImage(image, offset):
         
         # Does image match byte signature for an ISO 9660 image?
         containsISO9660Signature = signatureCheck(isoBytes)
+        addProperty(fileSystems, "fileSystem", "ISO9660")
         addProperty(tests, "containsISO9660Signature", containsISO9660Signature)
         
-        # Does image contain Apple Partition Map, HFS Plus Header or Master Directory Block?
-        # (Note: the HFS Plus Header replaces the Master Directory Block of HFS) 
+        # Does image contain Apple Partition Map?
         containsApplePartitionMap = isoBytes[0:2] == b'\x45\x52' and isoBytes[512:514] == b'\x50\x4D'
-        containsHFSPlusVolumeHeader = isoBytes[1024:1026] in[b'\x48\x2B', b'\x48\x58']
-        containsAppleMasterDirectoryBlock = isoBytes[1024:1026] in [b'\x42\x44',b'\xd2\xd7']        
+        
+        # Does image contain HFS Plus Header or Master Directory Block? This also allows us to identify the
+        # specific file system
+        # (Note: the HFS Plus Header replaces the Master Directory Block of HFS) 
+        
+        if isoBytes[1024:1026] == b'\x42\x44':
+            # Hierarchical File System
+            containsAppleMasterDirectoryBlock = True
+            addProperty(fileSystems, "fileSystem", "HFS")
+        if isoBytes[1024:1026] == b'\xd2\xd7':
+            # Macintosh File System
+            containsAppleMasterDirectoryBlock = True
+            addProperty(fileSystems, "fileSystem", "MFS")
+        if isoBytes[1024:1026] ==  b'\x48\x2B':
+            # HFS Plus
+            containsHFSPlusVolumeHeader = True
+            addProperty(fileSystems, "fileSystem", "HFS+")
+        if isoBytes[1024:1026] ==  b'\x48\x58':
+            # HFS X (record as HFS+ for consistency with Partition Map fields)
+            containsHFSPlusVolumeHeader = True
+            addProperty(fileSystems, "fileSystem", "HFS+")           
   
         addProperty(tests, "containsApplePartitionMap", containsApplePartitionMap)
         addProperty(tests, "containsHFSPlusVolumeHeader", containsHFSPlusVolumeHeader)
@@ -590,7 +612,7 @@ def processImage(image, offset):
                    
             # Based on description at: https://en.wikipedia.org/wiki/Apple_Partition_Map#Layout
             # and https://opensource.apple.com/source/IOStorageFamily/IOStorageFamily-116/IOApplePartitionScheme.h
-            
+                       
             # Get zero block data
             appleZeroBlockData = isoBytes[0:512]
             try:
@@ -602,7 +624,52 @@ def processImage(image, offset):
             
             addProperty(tests, "parsedAppleZeroBlock", str(parsedAppleZeroBlock))
             
+            # Set up list to store all values of 'partionType' in partition map
+            partitionTypes = [] 
             
+            # Get partition map data
+            applePartitionMapData = isoBytes[512:1024]
+            try:
+                applePartitionMapInfo = parseApplePartitionMap(applePartitionMapData)
+                # Add partition type value to list
+                partitionTypes.append(applePartitionMapInfo.find('partitionType').text)
+                properties.append(applePartitionMapInfo)
+                parsedApplePartitionMap = True
+            except:
+                parsedApplePartitionMap = False
+                
+            addProperty(tests, "parsedApplePartitionMap", str(parsedApplePartitionMap))
+            
+            # Iterate over remaining partition map entries
+            pOffset = 1024
+            for pMap in range(0, applePartitionMapInfo.find('numberOfPartitionEntries').text - 1):
+                applePartitionMapData = isoBytes[pOffset:pOffset+512]
+                try:
+                    applePartitionMapInfo = parseApplePartitionMap(applePartitionMapData)
+                    # Add partition type value to list
+                    partitionTypes.append(applePartitionMapInfo.find('partitionType').text)
+                    properties.append(applePartitionMapInfo)
+                    parsedApplePartitionMap = True
+                except:
+                    parsedApplePartitionMap = False
+               
+                pOffset += 512
+            
+            # Establish file system type from partitionType values in all partition maps
+            # Source: https://en.wikipedia.org/wiki/Apple_Partition_Map#Partition_identifiers
+            # Note that this doesn't cover all possible types (but no idea if any of the other types
+            # are used for optical media) 
+            
+            if 'Apple_MFS' in partitionTypes:
+                # Macintosh File System
+                addProperty(fileSystems, "fileSystem", "MFS")
+            if 'Apple_HFS' in partitionTypes:
+                # Hierarchical File System
+                addProperty(fileSystems, "fileSystem", "HFS")
+            if 'Apple_HFSX' in partitionTypes:
+                # HFS Plus
+                addProperty(fileSystems, "fileSystem", "HFS+")
+                
         if containsHFSPlusVolumeHeader == True:
                         
             containsSupportedFileSystem = True
@@ -678,8 +745,10 @@ def processImage(image, offset):
      
             byteStart = byteEnd
          
-        containsUDF = noExtendedVolumeDescriptors > 0       
-        addProperty(tests, "containsUDF", containsUDF) 
+        containsUDF = noExtendedVolumeDescriptors > 0
+        if containsUDF:
+            addProperty(fileSystems, "fileSystem", "UDF")     
+        addProperty(tests, "containsUDF", containsUDF)
 
         if containsUDF == True:
         
@@ -765,6 +834,7 @@ def processImage(image, offset):
             properties.append(udf)
         
         addProperty(tests, "containsSupportedFileSystem", str(containsSupportedFileSystem))
+        properties.append(fileSystems)
                 
         calculatedSizeExpected = False
         
@@ -855,7 +925,7 @@ def processImage(image, offset):
     addProperty(statusInfo, "success", str(success))
     if success == False:
         addProperty(statusInfo, "failureMessage", failureMessage)
-    
+   
     imageRoot.append(fileInfo)
     imageRoot.append(statusInfo)
     imageRoot.append(tests)
