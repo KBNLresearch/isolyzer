@@ -563,8 +563,14 @@ def processImage(image, offset):
             fsUDF.attrib["TYPE"] = "UDF"
             fileSystems.append(fsUDF)
         
-        calculatedSizeExpected = False
-        
+        # If no known file systems were found, report this in the tests element
+        if len(fileSystems) == 0:
+            containsKnownFileSystem = False
+        else:
+            containsKnownFileSystem = True
+            
+        shared.addProperty(tests, "containsKnownFileSystem", str(containsKnownFileSystem))        
+                
         # Expected ISO size (bytes) can now be calculated from 5 different places: 
         # PVD, Zero Block, Master Directory Block, HFS Plus header or UDF descriptors
 
@@ -574,6 +580,9 @@ def processImage(image, offset):
         sizeExpectedMDB = 0
         sizeExpectedHFSPlus = 0
         sizeExpectedUDF = 0
+        
+        # Initialise flag
+        calculatedSizeExpected = False
 
         if parsedPrimaryVolumeDescriptor == True:
             # Calculate from Primary Volume Descriptor
