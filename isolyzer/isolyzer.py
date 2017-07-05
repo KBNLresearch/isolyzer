@@ -4,7 +4,7 @@
 # ISO 9660 Volume Descriptors (no support for UDF file systems yet)
 # 
 #
-# Copyright (C) 2015, Johan van der Knijff, Koninklijke Bibliotheek -
+# Copyright (C) 2015 -2017, Johan van der Knijff, Koninklijke Bibliotheek -
 #  National Library of the Netherlands
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -257,15 +257,10 @@ def processImage(image, offset):
     # Create root element for image
     imageRoot = ET.Element('image')
 
-    # Create elements for storing tool, file and status meta info
-    toolInfo = ET.Element('toolInfo')
+    # Create elements for file and status meta info
     fileInfo = ET.Element('fileInfo')
     statusInfo = ET.Element('statusInfo')
     
-    # Some info on isolyzer and version used
-    shared.addProperty(toolInfo, "toolName", scriptName)
-    shared.addProperty(toolInfo, "toolVersion", __version__)
-
     # File name and path 
     fileName = os.path.basename(image)
     filePath = os.path.abspath(image)
@@ -662,7 +657,6 @@ def processImage(image, offset):
     if success == False:
         shared.addProperty(statusInfo, "failureMessage", failureMessage)
         
-    imageRoot.append(toolInfo)
     imageRoot.append(fileInfo)
     imageRoot.append(statusInfo)
     imageRoot.append(tests)
@@ -690,10 +684,17 @@ def main():
     ISOImages =  glob.glob(args.ISOImage)
     
     # Sector offset
-    sectorOffset = args.sectorOffset    
-    root = ET.Element("isolyzer")
-      
+    sectorOffset = args.sectorOffset
     
+    # Create output element
+    root = ET.Element("isolyzer")
+    
+    # Add some info on isolyzer and the version used
+    toolInfo = ET.Element('toolInfo')
+    shared.addProperty(toolInfo, "toolName", scriptName)
+    shared.addProperty(toolInfo, "toolVersion", __version__)
+    root.append(toolInfo)
+      
     for image in ISOImages:
         result = processImage(image,sectorOffset)
         root.append(result)
