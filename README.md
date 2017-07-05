@@ -2,11 +2,32 @@
 
 ## About
 
-*Isolyzer* verifies if the file size of a CD / DVD ISO 9660 image is consistent with the information in its [Primary Volume Descriptor](http://wiki.osdev.org/ISO_9660#The_Primary_Volume_Descriptor). For [hybrid discs](https://en.wikipedia.org/wiki/Hybrid_disc) that contain both an ISO 9660 file system and an Apple partition, the expected file size is calculated using the information in the partition table (zero block) or the master directory block. This can be useful for detecting incomplete (e.g. truncated) ISO images. What the tool does is this:
+*Isolyzer* verifies if the file size of a CD / DVD image ("ISO image") is consistent with the information in its filesystem-level headers. The following file systems are supported:
+
+* [ISO 9660](https://en.wikipedia.org/wiki/ISO_9660)
+* [Universal Disk Format](https://en.wikipedia.org/wiki/Universal_Disk_Format) (UDF)
+* Apple [Hierarchical File System](https://en.wikipedia.org/wiki/Hierarchical_File_System) (HFS)
+* Apple [HFS+](https://en.wikipedia.org/wiki/HFS_Plus)
+* [Hybrids](https://en.wikipedia.org/wiki/Hybrid_disc) of the above file systems, e.g. ISO 9660 + HFS; UDF Bridge (UDF + ISO 9660)
+
+Isolyzer uses the information in the filesystem-level headers to calculate the expected file size (typically based on a block size field and a number of blocks field). This is then compared against the actual file size, which can be useful for detecting incomplete (e.g. truncated) ISO images. Isolyzer also extracts and reports some technical metadata from the filesystem-level headers.
+
+## Calculation of the expected file size
+
+### ISO 9660
+
+ [Primary Volume Descriptor](http://wiki.osdev.org/ISO_9660#The_Primary_Volume_Descriptor). For [hybrid discs](https://en.wikipedia.org/wiki/Hybrid_disc) that contain both an ISO 9660 file system and an Apple partition, the expected file size is calculated using the information in the partition table (zero block) or the master directory block.  What the tool does is this:
 
 1. Locate the image's Primary Volume Descriptor (PVD).
 2. From the PVD, read the Volume Space Size (number of sectors/blocks) and Logical Block Size (number of bytes for each block) fields.
 3. Calculate expected file size as ( Volume Space Size x Logical Block Size ).
+
+### UDF
+
+
+### HFS and HFS+
+
+
 4. If the image contains an Apple Partition Map, read the Block Size and Block Count fields from ['Block Zero'](https://en.wikipedia.org/wiki/Apple_Partition_Map#Layout)
 5. Calculate expected file size as ( Block Size x Block Count )
 6. If the image contains an Apple Master Directory Block, read its Block Size and Block Count fields
@@ -14,7 +35,7 @@
 8. Calculate final expected file size as the largest value out of any of the above 3 values
 9. Compare this against the actual size of the image files.
 
-In addition to this, Isolyzer also extracts and reports technical metadata from the Primary Volume Descriptor and the Zero Block. 
+ 
 
 In practice the following 3 situations can occur:
 
