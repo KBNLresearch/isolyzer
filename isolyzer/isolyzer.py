@@ -28,6 +28,7 @@ import struct
 import re
 import codecs
 import argparse
+from six import u
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 if __package__ is None:
@@ -36,7 +37,6 @@ if __package__ is None:
     import apple as apple
     import byteconv as bc
     import shared as shared
-    from six import u
 else:
     # Use relative imports if run from package
     from . import iso9660 as iso
@@ -44,7 +44,6 @@ else:
     from . import apple as apple
     from . import byteconv as bc
     import shared as shared
-    from .six import u
 
 scriptPath, scriptName = os.path.split(sys.argv[0])
 
