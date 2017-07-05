@@ -31,6 +31,7 @@ import argparse
 from six import u
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
+
 if __package__ is None:
     import iso9660 as iso
     import udf as udf

@@ -4,13 +4,14 @@
 
 
 import xml.etree.ElementTree as ET
-if __package__ is None:
-    import byteconv as bc
-    import shared as shared
-else:
+
+if __package__ is "isolyzer":
     # Use relative imports if run from package
     from . import byteconv as bc
     from . import shared as shared
+else:
+    import byteconv as bc
+    import shared as shared
 
 def decDateTimeToDate(datetime):
     # Convert 17 bit dec-datetime field to formatted  date-time string
