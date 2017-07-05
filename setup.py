@@ -19,19 +19,25 @@ def find_version(*file_paths):
         return version_match.group(1)
     raise RuntimeError("Unable to find version string.")
 
+install_requires = [
+    'setuptools',
+    'six'
+]
+
 setup(name='isolyzer',
       packages=find_packages(),
       version=find_version('isolyzer', 'isolyzer.py'),
       license='Apache License 2.0',
+      install_requires=install_requires,
       platforms=['POSIX', 'Windows'],
       description='Verify size of ISO image',
-      long_description='Verify size of ISO image for consistency with Primary Volume Descriptor and Apple Zero Block fields',
+      long_description='Verify size of ISO image for consistency with file system (ISO 9660, UDF, HFS, HFS+) header fields',
       author='Johan van der Knijff',
       author_email='johan.vanderknijff@kb.nl',
       maintainer='Johan van der Knijff',
       maintainer_email = 'johan.vanderknijff@kb.nl',
-      url = 'https://github.com/KBNLresearch/verifyISOSize',
-      download_url='https://github.com/KBNLresearch/verifyISOSize/archive/' + find_version('isolyzer', 'isolyzer.py') + '.tar.gz',
+      url = 'https://github.com/KBNLresearch/omSipCreator',
+      download_url='https://github.com/KBNLresearch/omSipCreator/archive/' + find_version('isolyzer', 'isolyzer.py') + '.tar.gz',
       package_data={'isolyzer': ['*.*']},
       entry_points={'console_scripts': [
         'isolyzer = isolyzer.isolyzer:main',
