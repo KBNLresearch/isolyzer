@@ -349,7 +349,7 @@ def processImage(image, offset):
             # Get zero block data
             appleZeroBlockData = isoBytes[0:512]
             try:
-                appleZeroBlockInfo = apple.parseAppleZeroBlock(appleZeroBlockData)
+                appleZeroBlockInfo = apple.parseZeroBlock(appleZeroBlockData)
                 fsApple.append(appleZeroBlockInfo)
                 parsedAppleZeroBlock = True
             except:
@@ -363,7 +363,7 @@ def processImage(image, offset):
             # Get partition map data
             applePartitionMapData = isoBytes[512:1024]
             try:
-                applePartitionMapInfo = apple.parseApplePartitionMap(applePartitionMapData)
+                applePartitionMapInfo = apple.parsePartitionMap(applePartitionMapData)
                 # Add partition type value to list
                 partitionTypes.append(applePartitionMapInfo.find('partitionType').text)
                 fsApple.append(applePartitionMapInfo)
@@ -378,7 +378,7 @@ def processImage(image, offset):
             for pMap in range(0, applePartitionMapInfo.find('numberOfPartitionEntries').text - 1):
                 applePartitionMapData = isoBytes[pOffset:pOffset+512]
                 try:
-                    applePartitionMapInfo = apple.parseApplePartitionMap(applePartitionMapData)
+                    applePartitionMapInfo = apple.parsePartitionMap(applePartitionMapData)
                     # Add partition type value to list
                     partitionTypes.append(applePartitionMapInfo.find('partitionType').text)
                     fsApple.append(applePartitionMapInfo)
@@ -451,7 +451,7 @@ def processImage(image, offset):
             # (or unexpected EOF, which will result in -9999 value for volumeDescriptorType)
             while volumeDescriptorType != 255 and volumeDescriptorType != -9999:
             
-                volumeDescriptorType, volumeDescriptorData, byteEnd = iso.getISOVolumeDescriptor(isoBytes, byteStart)
+                volumeDescriptorType, volumeDescriptorData, byteEnd = iso.getVolumeDescriptor(isoBytes, byteStart)
                 noISOVolumeDescriptors += 1
                 
                 if volumeDescriptorType == 1:
@@ -462,7 +462,7 @@ def processImage(image, offset):
                         parsedPrimaryVolumeDescriptor = True
                     except:
                         parsedPrimaryVolumeDescriptor = False
-                        raise
+                        #raise
                         
                     #shared.addProperty(tests, "parsedPrimaryVolumeDescriptor", str(parsedPrimaryVolumeDescriptor))             
                 byteStart = byteEnd
@@ -506,7 +506,7 @@ def processImage(image, offset):
             
             # Read through main Volume Descriptor Sequence
             while tagIdentifier != 8 and tagIdentifier != -9999:
-                tagIdentifier, volumeDescriptorData, byteEnd = udf.getUDFVolumeDescriptor(isoBytes, byteStart)
+                tagIdentifier, volumeDescriptorData, byteEnd = udf.getVolumeDescriptor(isoBytes, byteStart)
                 #sys.stderr.write(str(tagIdentifier) + "\n")
                 
                 if tagIdentifier == 6:
@@ -514,7 +514,7 @@ def processImage(image, offset):
                     # Logical Volume descriptor
                 
                     try:
-                        lvdInfo = udf.parseUDFLogicalVolumeDescriptor(volumeDescriptorData)
+                        lvdInfo = udf.parseLogicalVolumeDescriptor(volumeDescriptorData)
                         fsUDF.append(lvdInfo)
                         parsedUDFLogicalVolumeDescriptor = True
                         
@@ -524,11 +524,10 @@ def processImage(image, offset):
                         
                         try:
                             # Read Logical Volume Integrity Descriptor
-                            lvidTagIdentifier, lvidVolumeDescriptorData, lVIDbyteEnd = getUDFVolumeDescriptor(isoBytes, 2048* integritySequenceExtentLocation)
-                            lvidInfo = udf.parseUDFLogicalVolumeIntegrityDescriptor(lvidVolumeDescriptorData)
+                            lvidTagIdentifier, lvidVolumeDescriptorData, lVIDbyteEnd = udf.getVolumeDescriptor(isoBytes, 2048* integritySequenceExtentLocation)
+                            lvidInfo = udf.parseLogicalVolumeIntegrityDescriptor(lvidVolumeDescriptorData)
                             fsUDF.append(lvidInfo)                        
-                            parsedUDFLogicalVolumeIntegrityDescriptor = True
-                                                        
+                            parsedUDFLogicalVolumeIntegrityDescriptor = True                          
                         except:
                             parsedUDFLogicalVolumeIntegrityDescriptor = False
                             #raise
@@ -545,7 +544,7 @@ def processImage(image, offset):
                     # Partition Descriptor
                 
                     try:
-                        pdInfo = udf.parseUDFPartitionDescriptor(volumeDescriptorData)
+                        pdInfo = udf.parsePartitionDescriptor(volumeDescriptorData)
                         fsUDF.append(pdInfo)
                         parsedUDFPartitionDescriptor = True
                                                 
@@ -655,7 +654,7 @@ def processImage(image, offset):
             failureMessage = "runtime error (please report to developers)"        
         else:
             failureMessage = "unknown error (please report to developers)"
-            raise
+            #raise
         printWarning(failureMessage)
 
      # Add success outcome to status info

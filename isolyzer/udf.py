@@ -22,7 +22,7 @@ def getExtendedVolumeDescriptor(bytesData, byteStart):
     
     return(volumeDescriptorIdentifier, volumeDescriptorData, byteEnd)
 
-def getUDFVolumeDescriptor(bytesData, byteStart):
+def getVolumeDescriptor(bytesData, byteStart):
     byteEnd = byteStart + 2048
     volumeDescriptorData = bytesData[byteStart:byteEnd]
     
@@ -33,7 +33,7 @@ def getUDFVolumeDescriptor(bytesData, byteStart):
        
     return(tagIdentifier, volumeDescriptorData, byteEnd)
 
-def parseUDFLogicalVolumeDescriptor(bytesData):
+def parseLogicalVolumeDescriptor(bytesData):
 
     # Set up elemement object to store extracted properties
     properties = ET.Element("logicalVolumeDescriptor")
@@ -58,7 +58,7 @@ def parseUDFLogicalVolumeDescriptor(bytesData):
     shared.addProperty(properties, "integritySequenceExtentLocation", bc.bytesToUIntL(bytesData[436:440]))
     return(properties)
     
-def parseUDFLogicalVolumeIntegrityDescriptor(bytesData):
+def parseLogicalVolumeIntegrityDescriptor(bytesData):
 
     # Note: parser based on ECMA TR/71 DVD Read-Only Disk - File System Specifications 
     # Link: https://www.ecma-international.org/publications/techreports/E-TR-071.htm
@@ -93,7 +93,7 @@ def parseUDFLogicalVolumeIntegrityDescriptor(bytesData):
     
     return(properties)
     
-def parseUDFPartitionDescriptor(bytesData):
+def parsePartitionDescriptor(bytesData):
 
     # Set up elemement object to store extracted properties
     properties = ET.Element("partitionDescriptor")

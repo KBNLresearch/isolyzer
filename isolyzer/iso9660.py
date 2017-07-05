@@ -31,7 +31,7 @@ def decDateTimeToDate(datetime):
         dateTimeString=""
     return(dateTimeString)
 
-def getISOVolumeDescriptor(bytesData, byteStart):
+def getVolumeDescriptor(bytesData, byteStart):
 
     # Read one 2048-byte ISO volume descriptor and return its descriptor
     # code and contents

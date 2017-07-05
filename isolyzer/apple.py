@@ -11,7 +11,7 @@ else:
     from . import byteconv as bc
     from . import shared as shared
 
-def parseAppleZeroBlock(bytesData):
+def parseZeroBlock(bytesData):
 
     # Based on code at:
     # https://opensource.apple.com/source/IOStorageFamily/IOStorageFamily-116/IOApplePartitionScheme.h
@@ -32,7 +32,7 @@ def parseAppleZeroBlock(bytesData):
         
     return(properties)
 
-def parseApplePartitionMap(bytesData):
+def parsePartitionMap(bytesData):
 
     # Based on description at:
     # https://en.wikipedia.org/wiki/Apple_Partition_Map#Layout
