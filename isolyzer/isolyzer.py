@@ -26,17 +26,24 @@ import imp
 import glob
 import struct
 import re
-import time
 import codecs
 import argparse
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 if __package__ is None:
+    import iso9660 as iso
+    import udf as udf
+    import apple as apple
     import byteconv as bc
+    import shared as shared
     from six import u
 else:
     # Use relative imports if run from package
+    from . import iso9660 as iso
+    from . import udf as udf
+    from . import apple as apple
     from . import byteconv as bc
+    import shared as shared
     from .six import u
 
 scriptPath, scriptName = os.path.split(sys.argv[0])
@@ -154,12 +161,6 @@ def makeHumanReadable(element, remapTable={}):
             # Update output tree
             elt.text = textOut
 
-def addProperty(element, tag, text):
-        # Append childnode with text
-
-        el = ET.SubElement(element, tag)
-        el.text = text
-
 def writeElement(elt, codec):
     # Writes element as XML to stdout using defined codec
 
@@ -225,280 +226,7 @@ def stripSurrogatePairs(ustring):
         ustring = tmp.decode('utf-8')
 
     return(ustring)
-
-def signatureCheck(bytesData):
-    # Check if file matches binary signature for ISO9660
-    # (Check for occurrence at offsets 32769 and 34817; 
-    # apparently 3rd ocurrece at offset 36865 is optional)
-    """
-    print("Signature matches:")
-    print(str("offset 32669: " + bytesData[32769:32774]))
-    print(str("offset 34817: " + bytesData[34817:34822]))
-    print(str("offset 36865: " + bytesData[36865:36870]))
-    """
-    if bytesData[32769:32774] == b'CD001'\
-        and bytesData[34817:34822] == b'CD001':
-        iso9660Match = True
-    else:
-        iso9660Match = False
-    
-    return(iso9660Match)
-
-def decDateTimeToDate(datetime):
-    # Convert 17 bit dec-datetime field to formatted  date-time string
-    # TODO: incorporate time zone offset into result
-    try:
-        year = int(bc.bytesToText(datetime[0:4]))
-        month = int(bc.bytesToText(datetime[4:6]))
-        day = int(bc.bytesToText(datetime[6:8]))
-        hour = int(bc.bytesToText(datetime[8:10]))
-        minute = int(bc.bytesToText(datetime[10:12]))
-        second = int(bc.bytesToText(datetime[12:14]))
-        hundrethSecond = int(bc.bytesToText(datetime[14:16]))
-        timeZoneOffset = bc.bytesToUnsignedChar(datetime[16:17])
-        dateString = "%d/%02d/%02d" % (year, month, day)
-        timeString = "%02d:%02d:%02d" % (hour, minute, second)
-        dateTimeString = "%s, %s" % (dateString, timeString)
-    except ValueError:
-        dateTimeString=""
-    return(dateTimeString)
-    
-def getISOVolumeDescriptor(bytesData, byteStart):
-
-    # Read one 2048-byte ISO volume descriptor and return its descriptor
-    # code and contents
-    byteEnd = byteStart + 2048
-    volumeDescriptorType = bc.bytesToUnsignedChar(bytesData[byteStart:byteStart+1])
-    volumeDescriptorData = bytesData[byteStart:byteEnd]
-    
-    return(volumeDescriptorType, volumeDescriptorData, byteEnd)
-    
-def getExtendedVolumeDescriptor(bytesData, byteStart):
-
-    # Read one 2048-byte extended (UDF only) volume descriptor and return its descriptor
-    # code and contents
-    byteEnd = byteStart + 2048
-    volumeDescriptorIdentifier = bc.bytesToText(bytesData[byteStart+1:byteStart+6])
-    volumeDescriptorData = bytesData[byteStart:byteEnd]
-    
-    return(volumeDescriptorIdentifier, volumeDescriptorData, byteEnd)
-
-def getUDFVolumeDescriptor(bytesData, byteStart):
-    byteEnd = byteStart + 2048
-    volumeDescriptorData = bytesData[byteStart:byteEnd]
-    
-    # Descriptor tag
-    descriptorTag  = volumeDescriptorData[0:16]
-    tagIdentifier = bc.bytesToUShortIntL(descriptorTag[0:2]) 
-    descriptorVersion = bc.bytesToUShortIntL(descriptorTag[2:4])
-       
-    return(tagIdentifier, volumeDescriptorData, byteEnd)
-    
-def parsePrimaryVolumeDescriptor(bytesData):
-
-    # Set up elemement object to store extracted properties
-    properties = ET.Element("primaryVolumeDescriptor")
-           
-    addProperty(properties, "typeCode", bc.bytesToUnsignedChar(bytesData[0:1]))
-    addProperty(properties, "standardIdentifier", bc.bytesToText(bytesData[1:6]))
-    addProperty(properties, "version", bc.bytesToUnsignedChar(bytesData[6:7]))
-    addProperty(properties, "systemIdentifier", bc.bytesToText(bytesData[8:40]))
-    addProperty(properties, "volumeIdentifier", bc.bytesToText(bytesData[40:72]))
-
-    # Fields below are stored as both little-endian and big-endian; only
-    # big-endian values read here!
-    
-    # Number of Logical Blocks in which the volume is recorded
-    addProperty(properties, "volumeSpaceSize", bc.bytesToUInt(bytesData[84:88]))
-    # The size of the set in this logical volume (number of disks)
-    addProperty(properties, "volumeSetSize", bc.bytesToUShortInt(bytesData[122:124]))
-    # The number of this disk in the Volume Set
-    addProperty(properties, "volumeSequenceNumber", bc.bytesToUShortInt(bytesData[126:128]))
-    # The size in bytes of a logical block
-    addProperty(properties, "logicalBlockSize", bc.bytesToUShortInt(bytesData[130:132]))
-    # The size in bytes of the path table
-    addProperty(properties, "pathTableSize", bc.bytesToUInt(bytesData[136:140]))
-	# Location of Type-L Path Table (note this is stored as little-endian only, hence
-	# byte swap!)
-    addProperty(properties, "typeLPathTableLocation", bc.swap32(bc.bytesToUInt(bytesData[140:144])))
-    # Location of Optional Type-L Path Table
-    addProperty(properties, "optionalTypeLPathTableLocation", bc.swap32(bc.bytesToUInt(bytesData[144:148])))
-    # Location of Type-M Path Table
-    addProperty(properties, "typeMPathTableLocation", bc.bytesToUInt(bytesData[148:152]))
-    # Location of Optional Type-M Path Table
-    addProperty(properties, "optionalTypeMPathTableLocation", bc.bytesToUInt(bytesData[152:156]))
-
-    # Following fields are all text strings
-    addProperty(properties, "volumeSetIdentifier", bc.bytesToText(bytesData[190:318]))
-    addProperty(properties, "publisherIdentifier", bc.bytesToText(bytesData[318:446]))
-    addProperty(properties, "dataPreparerIdentifier", bc.bytesToText(bytesData[446:574]))
-    addProperty(properties, "applicationIdentifier", bc.bytesToText(bytesData[574:702]))
-    addProperty(properties, "copyrightFileIdentifier", bc.bytesToText(bytesData[702:740]))
-    addProperty(properties, "abstractFileIdentifier", bc.bytesToText(bytesData[740:776]))
-    addProperty(properties, "bibliographicFileIdentifier", bc.bytesToText(bytesData[776:813]))
-    
-    # Following fields are all date-time values    
-    addProperty(properties, "volumeCreationDateAndTime", decDateTimeToDate(bytesData[813:830]))
-    addProperty(properties, "volumeModificationDateAndTime", decDateTimeToDate(bytesData[830:847]))
-    addProperty(properties, "volumeExpirationDateAndTime", decDateTimeToDate(bytesData[847:864]))
-    addProperty(properties, "volumeEffectiveDateAndTime", decDateTimeToDate(bytesData[864:881]))
-    
-    addProperty(properties, "fileStructureVersion", bc.bytesToUnsignedChar(bytesData[881:882]))
-    
-    return(properties)
-
-def parseUDFLogicalVolumeDescriptor(bytesData):
-
-    # Set up elemement object to store extracted properties
-    properties = ET.Element("logicalVolumeDescriptor")
-    addProperty(properties, "tagIdentifier", bc.bytesToUShortIntL(bytesData[0:2]))
-    addProperty(properties, "descriptorVersion", bc.bytesToUShortIntL(bytesData[2:4]))
-    addProperty(properties, "tagSerialNumber", bc.bytesToUShortIntL(bytesData[6:8]))
-    addProperty(properties, "volumeSequenceNumber", bc.bytesToUIntL(bytesData[16:20]))
-    # TODO: really don't know how to interpret descriptorCharacterSet, report as
-    # binhex for now
-    # addProperty(properties, "descriptorCharacterSet", bc.bytesToHex(bytesData[64:84]))
-    # TODO: is bytesToText encoding-safe here? Don't really understand this OSTA compressed
-    # Unicode at all!
-    # addProperty(properties, "compressionID", bc.bytesToUnsignedCharL(bytesData[84:85]))
-    # Below line works for UTF-8
-    addProperty(properties, "logicalVolumeIdentifier", bc.bytesToText(bytesData[85:212]))
-    addProperty(properties, "logicalBlockSize", bc.bytesToUIntL(bytesData[212:216]))
-    addProperty(properties, "domainIdentifier", bc.bytesToText(bytesData[216:248]))
-    addProperty(properties, "mapTableLength", bc.bytesToUIntL(bytesData[264:268]))
-    addProperty(properties, "numberOfPartitionMaps", bc.bytesToUIntL(bytesData[268:272]))
-    addProperty(properties, "implementationIdentifier", bc.bytesToText(bytesData[272:304]))
-    addProperty(properties, "integritySequenceExtentLength", bc.bytesToUIntL(bytesData[432:436]))
-    addProperty(properties, "integritySequenceExtentLocation", bc.bytesToUIntL(bytesData[436:440]))
-    return(properties)
-    
-def parseUDFLogicalVolumeIntegrityDescriptor(bytesData):
-
-    # Note: parser based on ECMA TR/71 DVD Read-Only Disk - File System Specifications 
-    # Link: https://www.ecma-international.org/publications/techreports/E-TR-071.htm
-    #
-    # This puts constraint that *freeSpaceTable* and *sizeTable* describe one partition only!
-    # Not 100% sure this applies to *all* DVDs (since TR/71 only defines UDF Bridge format!) 
-    # If not, make these fields repeatable, iterating over *numberOfPartitions*!
-
-    # Set up elemement object to store extracted properties
-    properties = ET.Element("logicalVolumeIntegrityDescriptor")
-    addProperty(properties, "tagIdentifier", bc.bytesToUShortIntL(bytesData[0:2]))
-    addProperty(properties, "descriptorVersion", bc.bytesToUShortIntL(bytesData[2:4]))
-    addProperty(properties, "tagSerialNumber", bc.bytesToUShortIntL(bytesData[6:8]))
-    
-    # Read timestamp fields and reformat to date/time string (ignoring centiseconds ... microseconds)
-    year = bc.bytesToUShortIntL(bytesData[18:20])
-    month = bc.bytesToUnsignedCharL(bytesData[20:21])
-    day = bc.bytesToUnsignedCharL(bytesData[21:22])
-    hour = bc.bytesToUnsignedCharL(bytesData[22:23])
-    minute = bc.bytesToUnsignedCharL(bytesData[23:24])
-    second = bc.bytesToUnsignedCharL(bytesData[24:25])
-    dateString = "%d/%02d/%02d" % (year, month, day)
-    timeString = "%02d:%02d:%02d" % (hour, minute, second)
-    dateTimeString = "%s, %s" % (dateString, timeString)
-    addProperty(properties, "timeStamp", dateTimeString)
-    
-    addProperty(properties, "integrityType", bc.bytesToUIntL(bytesData[28:32]))
-    addProperty(properties, "numberOfPartitions", bc.bytesToUIntL(bytesData[72:76]))
-    addProperty(properties, "lengthOfImplementationUse", bc.bytesToUIntL(bytesData[76:80]))
-    addProperty(properties, "freeSpaceTable", bc.bytesToUIntL(bytesData[80:84]))
-    addProperty(properties, "sizeTable", bc.bytesToUIntL(bytesData[84:88]))
-    
-    return(properties)
-    
-def parseUDFPartitionDescriptor(bytesData):
-
-    # Set up elemement object to store extracted properties
-    properties = ET.Element("partitionDescriptor")
-    addProperty(properties, "tagIdentifier", bc.bytesToUShortIntL(bytesData[0:2]))
-    addProperty(properties, "descriptorVersion", bc.bytesToUShortIntL(bytesData[2:4]))
-    addProperty(properties, "tagSerialNumber", bc.bytesToUShortIntL(bytesData[6:8]))
-      
-    addProperty(properties, "volumeDescriptorSequenceNumber", bc.bytesToUIntL(bytesData[16:20]))
-    addProperty(properties, "partitionNumber", bc.bytesToUShortIntL(bytesData[22:24]))
-    addProperty(properties, "accessType", bc.bytesToUIntL(bytesData[184:188]))
-    addProperty(properties, "partitionStartingLocation", bc.bytesToUIntL(bytesData[188:192]))
-    addProperty(properties, "partitionLength", bc.bytesToUIntL(bytesData[192:196]))
-
-    return(properties)
-
-def parseAppleZeroBlock(bytesData):
-
-    # Based on code at:
-    # https://opensource.apple.com/source/IOStorageFamily/IOStorageFamily-116/IOApplePartitionScheme.h
-
-    # Set up elemement object to store extracted properties
-    properties = ET.Element("appleZeroBlock")
-            
-    addProperty(properties, "signature", bc.bytesToText(bytesData[0:2]))
-    addProperty(properties, "blockSize", bc.bytesToUShortInt(bytesData[2:4]))
-    addProperty(properties, "blockCount", bc.bytesToUInt(bytesData[4:8]))
-    addProperty(properties, "deviceType", bc.bytesToUShortInt(bytesData[8:10]))
-    addProperty(properties, "deviceID", bc.bytesToUShortInt(bytesData[10:12]))
-    addProperty(properties, "driverData", bc.bytesToUInt(bytesData[12:16])) 
-    addProperty(properties, "driverDescriptorCount", bc.bytesToUShortInt(bytesData[80:82]))
-    addProperty(properties, "driverDescriptorBlockStart", bc.bytesToUInt(bytesData[82:86]))
-    addProperty(properties, "driverDescriptorBlockCount", bc.bytesToUShortInt(bytesData[86:88]))
-    addProperty(properties, "driverDescriptorSystemType", bc.bytesToUShortInt(bytesData[88:90]))
-        
-    return(properties)
-
-def parseApplePartitionMap(bytesData):
-
-    # Based on description at:
-    # https://en.wikipedia.org/wiki/Apple_Partition_Map#Layout
-    # and code at:
-    # https://opensource.apple.com/source/IOStorageFamily/IOStorageFamily-116/IOApplePartitionScheme.h
-    # Variable naming mostly follows Apple's code. 
-
-    # Set up elemement object to store extracted properties
-    properties = ET.Element("applePartitionMap")
-             
-    addProperty(properties, "signature", bc.bytesToText(bytesData[0:2]))
-    addProperty(properties, "numberOfPartitionEntries", bc.bytesToUInt(bytesData[4:8]))
-    addProperty(properties, "partitionBlockStart", bc.bytesToUInt(bytesData[8:12]))
-    addProperty(properties, "partitionBlockCount", bc.bytesToUInt(bytesData[12:16]))
-    addProperty(properties, "partitionName", bc.bytesToText(bytesData[16:48]))
-    addProperty(properties, "partitionType", bc.bytesToText(bytesData[48:80]))
-    addProperty(properties, "partitionLogicalBlockStart", bc.bytesToUInt(bytesData[80:84]))
-    addProperty(properties, "partitionLogicalBlockCount", bc.bytesToUInt(bytesData[84:88]))
-    addProperty(properties, "partitionFlags", bc.bytesToUInt(bytesData[88:92]))
-    addProperty(properties, "bootCodeBlockStart", bc.bytesToUInt(bytesData[92:96]))
-    addProperty(properties, "bootCodeSizeInBytes", bc.bytesToUInt(bytesData[96:100]))
-    addProperty(properties, "bootCodeLoadAddress", bc.bytesToUInt(bytesData[100:104]))
-    addProperty(properties, "bootCodeJumpAddress", bc.bytesToUInt(bytesData[108:112]))
-    addProperty(properties, "bootCodeChecksum", bc.bytesToUInt(bytesData[116:120]))
-    addProperty(properties, "processorType", bc.bytesToText(bytesData[120:136]))
-    return(properties)
-    
-def parseMasterDirectoryBlock(bytesData):
-    # Based on description at:
-    # https://developer.apple.com/legacy/library/documentation/mac/Files/Files-102.html
-    # and https://github.com/libyal/libfshfs/blob/master/documentation/Hierarchical%20File%20System%20(HFS).asciidoc
-
-    # Set up elemement object to store extracted properties
-    properties = ET.Element("masterDirectoryBlock")
-             
-    addProperty(properties, "signature", bc.bytesToText(bytesData[0:2]))
-    addProperty(properties, "blockSize", bc.bytesToUShortInt(bytesData[18:20]))
-    addProperty(properties, "blockCount", bc.bytesToUInt(bytesData[20:24]))
-    addProperty(properties, "volumeName", bc.bytesToText(bytesData[37:63]))
-    return(properties)
-
-def parseHFSPlusVolumeHeader(bytesData):
-
-    # Based on https://opensource.apple.com/source/xnu/xnu-344/bsd/hfs/hfs_format.h
-    
-    # Set up elemement object to store extracted properties
-    properties = ET.Element("hfsPlusVolumeheader")
-             
-    addProperty(properties, "signature", bc.bytesToText(bytesData[0:2]))
-    addProperty(properties, "version", bc.bytesToUShortInt(bytesData[2:4]))
-    addProperty(properties, "blockSize", bc.bytesToUInt(bytesData[40:44]))
-    addProperty(properties, "blockCount", bc.bytesToUInt(bytesData[44:48]))
-    
-    return(properties)
+     
 
 def parseCommandLine():
     # Add arguments
@@ -535,8 +263,8 @@ def processImage(image, offset):
     statusInfo = ET.Element('statusInfo')
     
     # Some info on isolyzer and version used
-    addProperty(toolInfo, "toolName", scriptName)
-    addProperty(toolInfo, "toolVersion", __version__)
+    shared.addProperty(toolInfo, "toolName", scriptName)
+    shared.addProperty(toolInfo, "toolVersion", __version__)
 
     # File name and path 
     fileName = os.path.basename(image)
@@ -548,16 +276,16 @@ def processImage(image, offset):
     filePathCleaned = stripSurrogatePairs(filePath)
 
     # Produce some general file meta info
-    addProperty(fileInfo, "fileName", fileNameCleaned)
-    addProperty(fileInfo, "filePath", filePathCleaned)
-    addProperty(fileInfo, "fileSizeInBytes", str(os.path.getsize(image)))
+    shared.addProperty(fileInfo, "fileName", fileNameCleaned)
+    shared.addProperty(fileInfo, "filePath", filePathCleaned)
+    shared.addProperty(fileInfo, "fileSizeInBytes", str(os.path.getsize(image)))
     try:
         lastModifiedDate = time.ctime(os.path.getmtime(image))
     except ValueError:
         # Dates earlier than 1 Jan 1970 can raise ValueError on Windows
         # Workaround: replace by lowest possible value (typically 1 Jan 1970)
         lastModifiedDate = time.ctime(0)
-    addProperty(fileInfo, "fileLastModified", lastModifiedDate)
+    shared.addProperty(fileInfo, "fileLastModified", lastModifiedDate)
     
     tests = ET.Element("tests")
     fileSystems = ET.Element("fileSystems")
@@ -582,7 +310,7 @@ def processImage(image, offset):
         isoBytes = readFileBytes(image, byteStart,noBytes)
         
         # Does image match byte signature for an ISO 9660 image?
-        containsISO9660Signature = signatureCheck(isoBytes)
+        containsISO9660Signature = isoBytes[32769:32774] == b'CD001' and isoBytes[34817:34822] == b'CD001'
              
         # Does image contain Apple Partition Map?
         containsApplePartitionMap = isoBytes[0:2] == b'\x45\x52' and isoBytes[512:514] == b'\x50\x4D'
@@ -594,24 +322,24 @@ def processImage(image, offset):
         if isoBytes[1024:1026] == b'\x42\x44':
             # Hierarchical File System
             containsAppleMasterDirectoryBlock = True
-            fsApple = "HFS"
+            fileSystemApple = "HFS"
         if isoBytes[1024:1026] == b'\xd2\xd7':
             # Macintosh File System
             containsAppleMasterDirectoryBlock = True
-            fsApple = "MFS"
+            fileSystemApple = "MFS"
         if isoBytes[1024:1026] ==  b'\x48\x2B':
             # HFS Plus
             containsHFSPlusVolumeHeader = True
-            fsApple = "HFS+"
+            fileSystemApple = "HFS+"
         if isoBytes[1024:1026] ==  b'\x48\x58':
             # HFS X (record as HFS+ for consistency with Partition Map fields)
             containsHFSPlusVolumeHeader = True
-            fsApple = "HFS+"
+            fileSystemApple = "HFS+"
         
         # Create element to store properties of Apple filesystems
         if containsApplePartitionMap or containsAppleMasterDirectoryBlock or containsHFSPlusVolumeHeader:
             containsAppleFS = True
-            apple = ET.Element("fileSystem")
+            fsApple = ET.Element("fileSystem")
                       
         if containsApplePartitionMap == True:
                            
@@ -621,13 +349,13 @@ def processImage(image, offset):
             # Get zero block data
             appleZeroBlockData = isoBytes[0:512]
             try:
-                appleZeroBlockInfo = parseAppleZeroBlock(appleZeroBlockData)
-                apple.append(appleZeroBlockInfo)
+                appleZeroBlockInfo = apple.parseAppleZeroBlock(appleZeroBlockData)
+                fsApple.append(appleZeroBlockInfo)
                 parsedAppleZeroBlock = True
             except:
                 parsedAppleZeroBlock = False
             
-            #addProperty(tests, "parsedAppleZeroBlock", str(parsedAppleZeroBlock))
+            #shared.addProperty(tests, "parsedAppleZeroBlock", str(parsedAppleZeroBlock))
             
             # Set up list to store all values of 'partionType' in partition map
             partitionTypes = [] 
@@ -635,25 +363,25 @@ def processImage(image, offset):
             # Get partition map data
             applePartitionMapData = isoBytes[512:1024]
             try:
-                applePartitionMapInfo = parseApplePartitionMap(applePartitionMapData)
+                applePartitionMapInfo = apple.parseApplePartitionMap(applePartitionMapData)
                 # Add partition type value to list
                 partitionTypes.append(applePartitionMapInfo.find('partitionType').text)
-                apple.append(applePartitionMapInfo)
+                fsApple.append(applePartitionMapInfo)
                 parsedApplePartitionMap = True
             except:
                 parsedApplePartitionMap = False
                 
-            #addProperty(tests, "parsedApplePartitionMap", str(parsedApplePartitionMap))
+            #shared.addProperty(tests, "parsedApplePartitionMap", str(parsedApplePartitionMap))
             
             # Iterate over remaining partition map entries
             pOffset = 1024
             for pMap in range(0, applePartitionMapInfo.find('numberOfPartitionEntries').text - 1):
                 applePartitionMapData = isoBytes[pOffset:pOffset+512]
                 try:
-                    applePartitionMapInfo = parseApplePartitionMap(applePartitionMapData)
+                    applePartitionMapInfo = apple.parseApplePartitionMap(applePartitionMapData)
                     # Add partition type value to list
                     partitionTypes.append(applePartitionMapInfo.find('partitionType').text)
-                    apple.append(applePartitionMapInfo)
+                    fsApple.append(applePartitionMapInfo)
                     parsedApplePartitionMap = True
                 except:
                     parsedApplePartitionMap = False
@@ -667,40 +395,40 @@ def processImage(image, offset):
             
             if 'Apple_MFS' in partitionTypes:
                 # Macintosh File System
-                fsApple = "MFS"
+                fileSystemApple = "MFS"
             elif 'Apple_HFS' in partitionTypes:
                 # Hierarchical File System
-                fsApple = "HFS"
+                fileSystemApple = "HFS"
             elif 'Apple_HFSX' in partitionTypes:
                 # HFS Plus
-                fsApple = "HFS+"
+                fileSystemApple = "HFS+"
             else:
                 # Unknown file system
-                fsApple = "Unknown"
+                fileSystemApple = "Unknown"
                 
         if containsHFSPlusVolumeHeader == True:
                       
             hfsPlusHeaderData = isoBytes[1024:1536]
             try:
-                hfsPlusHeaderInfo = parseHFSPlusVolumeHeader(hfsPlusHeaderData)
-                apple.append(hfsPlusHeaderInfo)
+                hfsPlusHeaderInfo = apple.parseHFSPlusVolumeHeader(hfsPlusHeaderData)
+                fsApple.append(hfsPlusHeaderInfo)
                 parsedHFSPlusVolumeHeader = True
             except:
                 parsedHFSPlusVolumeHeader = False
             
-            #addProperty(tests, "parsedHFSPlusVolumeHeader", str(parsedHFSPlusVolumeHeader))
+            #shared.addProperty(tests, "parsedHFSPlusVolumeHeader", str(parsedHFSPlusVolumeHeader))
                     
         if containsAppleMasterDirectoryBlock == True:
             
             masterDirectoryBlockData = isoBytes[1024:1536] # Size of MDB?
             try:
-                masterDirectoryBlockInfo = parseMasterDirectoryBlock(masterDirectoryBlockData)
-                apple.append(masterDirectoryBlockInfo)
+                masterDirectoryBlockInfo = apple.parseMasterDirectoryBlock(masterDirectoryBlockData)
+                fsApple.append(masterDirectoryBlockInfo)
                 parsedMasterDirectoryBlock = True
             except:
                 parsedMasterDirectoryBlock = False
             
-            #addProperty(tests, "parsedMasterDirectoryBlock", str(parsedMasterDirectoryBlock))
+            #shared.addProperty(tests, "parsedMasterDirectoryBlock", str(parsedMasterDirectoryBlock))
 
         # This is a dummy value
         volumeDescriptorType = -1
@@ -717,25 +445,26 @@ def processImage(image, offset):
         if containsISO9660Signature == True:
         
             # Create element to store properties of ISO9660 filesystem
-            iso9660 = ET.Element("fileSystem")
+            fsISO = ET.Element("fileSystem")
 
             # Read through all 2048-byte ISO volume descriptors, until Volume Descriptor Set Terminator is found
             # (or unexpected EOF, which will result in -9999 value for volumeDescriptorType)
             while volumeDescriptorType != 255 and volumeDescriptorType != -9999:
             
-                volumeDescriptorType, volumeDescriptorData, byteEnd = getISOVolumeDescriptor(isoBytes, byteStart)
+                volumeDescriptorType, volumeDescriptorData, byteEnd = iso.getISOVolumeDescriptor(isoBytes, byteStart)
                 noISOVolumeDescriptors += 1
                 
                 if volumeDescriptorType == 1:
                     # Get info from Primary Volume Descriptor (as element object)
                     try:
-                        pvdInfo = parsePrimaryVolumeDescriptor(volumeDescriptorData)
-                        iso9660.append(pvdInfo)
+                        pvdInfo = iso.parsePrimaryVolumeDescriptor(volumeDescriptorData)
+                        fsISO.append(pvdInfo)
                         parsedPrimaryVolumeDescriptor = True
                     except:
                         parsedPrimaryVolumeDescriptor = False
+                        raise
                         
-                    #addProperty(tests, "parsedPrimaryVolumeDescriptor", str(parsedPrimaryVolumeDescriptor))             
+                    #shared.addProperty(tests, "parsedPrimaryVolumeDescriptor", str(parsedPrimaryVolumeDescriptor))             
                 byteStart = byteEnd
         
         # Read through extended (UDF) volume descriptors (if present)
@@ -744,7 +473,7 @@ def processImage(image, offset):
         volumeDescriptorIdentifier = "CD001"
                 
         while volumeDescriptorIdentifier in ["CD001", "BEA01", "NSR02", "NSR03", "BOOT2", "TEA01"]:
-            volumeDescriptorIdentifier, volumeDescriptorData, byteEnd = getExtendedVolumeDescriptor(isoBytes, byteStart)
+            volumeDescriptorIdentifier, volumeDescriptorData, byteEnd = udf.getExtendedVolumeDescriptor(isoBytes, byteStart)
             if volumeDescriptorIdentifier in ["BEA01", "NSR02", "NSR03", "BOOT2", "TEA01"]:
                 noExtendedVolumeDescriptors += 1
      
@@ -755,7 +484,7 @@ def processImage(image, offset):
         if containsUDF == True:
         
             # Create element to store properties of UDF filesystem
-            udf = ET.Element("fileSystem")
+            fsUDF = ET.Element("fileSystem")
                             
             # Read Anchor Volume Descriptor Pointer; located at sector 256
             byteStart = 256*2048
@@ -777,7 +506,7 @@ def processImage(image, offset):
             
             # Read through main Volume Descriptor Sequence
             while tagIdentifier != 8 and tagIdentifier != -9999:
-                tagIdentifier, volumeDescriptorData, byteEnd = getUDFVolumeDescriptor(isoBytes, byteStart)
+                tagIdentifier, volumeDescriptorData, byteEnd = udf.getUDFVolumeDescriptor(isoBytes, byteStart)
                 #sys.stderr.write(str(tagIdentifier) + "\n")
                 
                 if tagIdentifier == 6:
@@ -785,8 +514,8 @@ def processImage(image, offset):
                     # Logical Volume descriptor
                 
                     try:
-                        lvdInfo = parseUDFLogicalVolumeDescriptor(volumeDescriptorData)
-                        udf.append(lvdInfo)
+                        lvdInfo = udf.parseUDFLogicalVolumeDescriptor(volumeDescriptorData)
+                        fsUDF.append(lvdInfo)
                         parsedUDFLogicalVolumeDescriptor = True
                         
                         # Start sector and length of integrity sequence
@@ -796,8 +525,8 @@ def processImage(image, offset):
                         try:
                             # Read Logical Volume Integrity Descriptor
                             lvidTagIdentifier, lvidVolumeDescriptorData, lVIDbyteEnd = getUDFVolumeDescriptor(isoBytes, 2048* integritySequenceExtentLocation)
-                            lvidInfo = parseUDFLogicalVolumeIntegrityDescriptor(lvidVolumeDescriptorData)
-                            udf.append(lvidInfo)                        
+                            lvidInfo = udf.parseUDFLogicalVolumeIntegrityDescriptor(lvidVolumeDescriptorData)
+                            fsUDF.append(lvidInfo)                        
                             parsedUDFLogicalVolumeIntegrityDescriptor = True
                                                         
                         except:
@@ -808,37 +537,37 @@ def processImage(image, offset):
                         parsedUDFLogicalVolumeDescriptor = False
                         #raise
                     
-                    #addProperty(tests, "parsedUDFLogicalVolumeDescriptor", str(parsedUDFLogicalVolumeDescriptor))
-                    #addProperty(tests, "parsedUDFLogicalVolumeIntegrityDescriptor", str(parsedUDFLogicalVolumeIntegrityDescriptor))
+                    #shared.addProperty(tests, "parsedUDFLogicalVolumeDescriptor", str(parsedUDFLogicalVolumeDescriptor))
+                    #shared.addProperty(tests, "parsedUDFLogicalVolumeIntegrityDescriptor", str(parsedUDFLogicalVolumeIntegrityDescriptor))
                     
                 if tagIdentifier == 5:
                     
                     # Partition Descriptor
                 
                     try:
-                        pdInfo = parseUDFPartitionDescriptor(volumeDescriptorData)
-                        udf.append(pdInfo)
+                        pdInfo = udf.parseUDFPartitionDescriptor(volumeDescriptorData)
+                        fsUDF.append(pdInfo)
                         parsedUDFPartitionDescriptor = True
                                                 
                     except:
                         parsedUDFPartitionDescriptor = False
                         #raise
                     
-                    #addProperty(tests, "parsedUDFPartitionDescriptor", str(parsedUDFPartitionDescriptor))
+                    #shared.addProperty(tests, "parsedUDFPartitionDescriptor", str(parsedUDFPartitionDescriptor))
                 
                 noUDFVolumeDescriptors += 1
                 byteStart = byteEnd
                         
         # Append all fs-specific output to fileSystems element 
         if containsISO9660Signature == True:
-            iso9660.attrib["TYPE"] = "ISO 9660"
-            fileSystems.append(iso9660)
+            fsISO.attrib["TYPE"] = "ISO 9660"
+            fileSystems.append(fsISO)
         if containsAppleFS == True:
-            apple.attrib["TYPE"] = fsApple
-            fileSystems.append(apple)
+            fsApple.attrib["TYPE"] = fileSystemApple
+            fileSystems.append(fsApple)
         if containsUDF == True:
-            udf.attrib["TYPE"] = "UDF"
-            fileSystems.append(udf)
+            fsUDF.attrib["TYPE"] = "UDF"
+            fileSystems.append(fsUDF)
         
         calculatedSizeExpected = False
         
@@ -907,12 +636,12 @@ def processImage(image, offset):
             imageHasExpectedSize = False
             imageSmallerThanExpected = True
             
-        addProperty(tests, "sizeExpected", sizeExpected)
-        addProperty(tests, "sizeActual", isoFileSize)
-        addProperty(tests, "sizeDifference", diffSize)
-        addProperty(tests, "sizeDifferenceSectors", diffSizeSectors)
-        addProperty(tests, "sizeAsExpected", imageHasExpectedSize)
-        addProperty(tests, "smallerThanExpected", imageSmallerThanExpected)
+        shared.addProperty(tests, "sizeExpected", sizeExpected)
+        shared.addProperty(tests, "sizeActual", isoFileSize)
+        shared.addProperty(tests, "sizeDifference", diffSize)
+        shared.addProperty(tests, "sizeDifferenceSectors", diffSizeSectors)
+        shared.addProperty(tests, "sizeAsExpected", imageHasExpectedSize)
+        shared.addProperty(tests, "smallerThanExpected", imageSmallerThanExpected)
 
     except Exception as ex:
         success = False
@@ -930,9 +659,9 @@ def processImage(image, offset):
         printWarning(failureMessage)
 
      # Add success outcome to status info
-    addProperty(statusInfo, "success", str(success))
+    shared.addProperty(statusInfo, "success", str(success))
     if success == False:
-        addProperty(statusInfo, "failureMessage", failureMessage)
+        shared.addProperty(statusInfo, "failureMessage", failureMessage)
         
     imageRoot.append(toolInfo)
     imageRoot.append(fileInfo)
