@@ -16,27 +16,63 @@ Isolyzer uses the information in the filesystem-level headers to calculate the e
 
 ### ISO 9660
 
- [Primary Volume Descriptor](http://wiki.osdev.org/ISO_9660#The_Primary_Volume_Descriptor). For [hybrid discs](https://en.wikipedia.org/wiki/Hybrid_disc) that contain both an ISO 9660 file system and an Apple partition, the expected file size is calculated using the information in the partition table (zero block) or the master directory block.  What the tool does is this:
+For an ISO 9660 file system, Isolyzer locates and parses its [Primary Volume Descriptor](http://wiki.osdev.org/ISO_9660#The_Primary_Volume_Descriptor) (PVD). From the PVD it 2. From the PVD it then reads the *Volume Space Size* field (which denotes the number of sectors/blocks in the image) and the *Logical Block Size* field (the number of bytes for each block). The expected file size is then calculated as:
 
-1. Locate the image's Primary Volume Descriptor (PVD).
-2. From the PVD, read the Volume Space Size (number of sectors/blocks) and Logical Block Size (number of bytes for each block) fields.
-3. Calculate expected file size as ( Volume Space Size x Logical Block Size ).
+*SizeExpectedISO* =  (*Volume Space Size* - *Offset*) x *Logical Block Size*
+
+Here, *Offset* is a user-defined sector offset (its value is 0 by default, but see example 4 below for an explanation).  
+
+### Apple partition without Apple Partition Map
+
+An Apple partition contains either a HFS or HFS+ file system. In the simplest case these file systems can be identified by the presence of a *Master Directory Block* (for a HFS file system) or a *HFS Plus Header* (HFS+ file system) at 1024 bytes into the image. If either of these structures are found, they are parsed by Isolyzer. Both contain a *Block Count* and a *Block Size* field, which are used to calculate the expected size as:
+
+*SizeExpectedApple* =  *Block Count* x *Block Size*
+
+### Apple partition with Apple Partition Map
+
+In some cases Apple partitions are identified by the presence of a sequence of (one or more) [*Apple Partition Maps*](https://en.wikipedia.org/wiki/Apple_Partition_Map) starting at 512 bytes into the image. Images with an Apple Partition Map have a *Zero Block* at the beginning of the file, which contains *Block Count* and a *Block Size* fields that are used to calculate the expected size as:
+
+*SizeExpectedPM* =  *Block Count* x *Block Size*
+
+As an aside, the file system type in this case is identified from the Partition Map's *Partition Type* field. 
 
 ### UDF
 
+For UDF file systems estimating the expected file size is less straightforward than the previous file systems, mainly because the equivalent field that denotes the number of blocks in the partition excludes the descriptor blocks that occur before and after the actual data. The following fields are relevant:
 
-### HFS and HFS+
+* *Logical Block Size*, read from the Logical Volume Descriptor.
+* *Partition Length*, read from the Partition Descriptor.
+* *Partition Starting Location*, read from the Partition Descriptor.
 
+Using these fields, Isolyzer estimates the expected file size as:
 
-4. If the image contains an Apple Partition Map, read the Block Size and Block Count fields from ['Block Zero'](https://en.wikipedia.org/wiki/Apple_Partition_Map#Layout)
-5. Calculate expected file size as ( Block Size x Block Count )
-6. If the image contains an Apple Master Directory Block, read its Block Size and Block Count fields
-7. Calculate expected file size as ( Block Size x Block Count )
-8. Calculate final expected file size as the largest value out of any of the above 3 values
-9. Compare this against the actual size of the image files.
+*SizExpectedUDF* = (*Partition Length* + *Partition Starting Location*) * *Logical Block Size*
 
+This corresponds to the combined size of the partition, the descriptor blocks that precede it and one additional descriptor block after the partition. However, often the partition is followed by *multiple* descriptor blocks (sometimes more than 100!). As there doesn't appear to be a way to determine the exact number of trailing descriptor blocks, the value of *SizExpectedUDF* is often smaller than the actual file size. This is something that might be improved in future versions of Isolyzer (e.g. by doing a deeper parsing of the UDF structure).
+
+## Hybrid file systems
+
+Many CD-ROMs and DVDs actually are [hybrids](https://en.wikipedia.org/wiki/Hybrid_disc) that combine multiple file systems. For instance, CD-ROMS with a hybrid ISO 9660/ Apple file system are common, as are DVDs with a UDF file system that is complemented by an additional ISO 9660 file system ([UDF Bridge](http://www.afterdawn.com/glossary/term.cfm/udf_bridge) format).
+
+For these hybrid file systems, Isolyzer assumes that the expected size is the largest value out of the individual values of all file systems:
+
+*SizeExpected* = max(*SizeExpectedISO*, *SizeExpectedApple*, *SizeExpectedPM*, *SizExpectedUDF*) 
+
+## Isolyzer output
  
+### toolInfo element
 
+### image element
+
+### fileInfo element
+
+### statusInfo element
+
+### tests element
+
+### fileSystems element 
+
+<!--
 In practice the following 3 situations can occur:
 
 1. Actual size equals expected size (value of *tests/sizeAsExpected* in the output equals *True*) - perfect!
@@ -45,13 +81,19 @@ In practice the following 3 situations can occur:
 
 I wrote this tool after encountering [incomplete ISO images after running ddrescue](http://qanda.digipres.org/1076/incomplete-image-after-imaging-rom-prevent-and-detect-this) (most likely caused by some hardware issue), and subsequently discovering that [isovfy](http://manpages.ubuntu.com/manpages/hardy/man1/devdump.1.html) doesn't detect this at all (tried with version 1.1.11 on Linux Mint 17.1).
 
-The code is largely based on the following documentation:
+The code is largely based on the following documentation and resources:
 
 * <http://wiki.osdev.org/ISO_9660> - explanation of the ISO 9660 filesystem
-* <https://en.wikipedia.org/wiki/Hybrid_disc> - Wikipedia entry on hybrid discs
+* <https://github.com/libyal/libfshfs/blob/master/documentation/Hierarchical%20File%20System%20(HFS).asciidoc> - good explanation of HFS and HFS+ file systems
 * <https://opensource.apple.com/source/IOStorageFamily/IOStorageFamily-116/IOApplePartitionScheme.h> - Apple's code with Apple partitions and zero block definitions  
 * <https://en.wikipedia.org/wiki/Apple_Partition_Map#Layout> - overview of Apple partition map
 * <https://developer.apple.com/legacy/library/documentation/mac/Files/Files-102.html> - Apple documentation on Master Directory Block structure
+* <http://wiki.osdev.org/UDF> - overview of UDF
+* <https://www.ecma-international.org/publications/standards/Ecma-167.htm> - Volume and File Structure for Write-Once and Rewritable Media using Non-Sequential Recording for Information Interchange (general framework that forms basis of UDF)
+* <http://www.osta.org/specs/index.htm> - UDF specifications
+* <https://www.ecma-international.org/publications/files/ECMA-TR/ECMA%20TR-071.PDF> - UDF Bridge Format
+* <https://sites.google.com/site/udfintro/> - Wenguang's Introduction to Universal Disk Format (UDF)
+* <https://en.wikipedia.org/wiki/Hybrid_disc> - Wikipedia entry on hybrid discs
 
 ## Limitations
 
@@ -386,6 +428,8 @@ Result:
             </properties>
         </image>
     </isolyzer>
+
+-->
 
 ## License
 
