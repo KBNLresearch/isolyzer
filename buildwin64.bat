@@ -7,10 +7,10 @@
 ::
 :: Dependencies:
 :: 
-:: - Python 2.7, 64-bit version  (PyInstaller doesn't work with Python 3 yet!) 
-:: - PyInstaller 2: http://www.pyinstaller.org/
+:: - Python 3.x, 64-bit version 
+:: - PyInstaller: http://www.pyinstaller.org/
 :: - PyWin32 (needed by PyInstaller): http://sourceforge.net/projects/pywin32/files/
-:: - a spec file with 
+
 ::
 @echo off
 setlocal
@@ -19,11 +19,7 @@ setlocal
 
 :: Python
 :: Note that to produce a 32-bit binary we need a 32-bit Python version!
-set python=c:\python27\python
-::set python=c:\python27_32bit\python
-
-:: Path to PyInstaller
-set pathPyInstaller=c:\pyinstall\
+set python=c:\python36\python
 
 :: Script base name (i.e. script name minus .py extension)
 set scriptBaseName=isolyzer
@@ -37,14 +33,14 @@ set distDir=.\dist_win64\
 :: Executes isolyzer with -v option and stores output to 
 :: env variable 'version'
 set vCommand=%python% .\%scriptBaseName%\%scriptBaseName%.py -v
-%vCommand% 2> temp.txt
+%vCommand% > temp.txt
 set /p version= < temp.txt
 del temp.txt 
 
 ::::::::: BUILD :::::::::::::::::: 
 
 :: Build binaries
-%python% %pathPyInstaller%\pyinstaller.py %specFile%
+pyinstaller %specFile%
 
 :: Generate name for ZIP file
 set zipName=%scriptBaseName%_%version%_win64.zip
