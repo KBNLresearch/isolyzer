@@ -233,7 +233,6 @@ def parseCommandLine():
     parser.add_argument('ISOImages', 
         action = "store", 
         type = str, 
-        nargs='+',
         help = "input ISO image(s) (wildcards allowed)")
     parser.add_argument('--version', '-v',
         action = 'version', 
@@ -691,7 +690,7 @@ def main():
     args = parseCommandLine()
          
     # Input
-    ISOImages = args.ISOImages
+    ISOImages = glob.glob(args.ISOImages)
     
     # Sector offset
     sectorOffset = args.sectorOffset
