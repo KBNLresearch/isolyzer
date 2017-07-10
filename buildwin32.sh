@@ -19,6 +19,7 @@ scriptBaseName=isolyzer
 specFile=win32.spec
 
 # Directory where build is created (should be identical to 'name' in 'coll' in spec file!!)
+# TOSO is this even used, as default name seems to be 'dist'?!
 distDir=./dist_win32/
 
 # Executes isolyzer with -v option and stores output to 
@@ -36,7 +37,10 @@ $pyInstallerWine $specFile
 zipName="$scriptBaseName"_"$version"_win32.zip
 
 # Create ZIP file
-wine $pythonWine zipdir.py "$distDir"/"$scriptBaseName" "$distDir"/"$zipName"
+cd ./dist
+zip -r $zipName isolyzer
+cd ..
+mv ./dist/$zipName .
 
 # CLEANUP 
 
