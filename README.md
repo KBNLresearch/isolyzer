@@ -12,100 +12,9 @@
 
 Isolyzer uses the information in the filesystem-level headers to calculate the expected file size (typically based on a block size field and a number of blocks field). This is then compared against the actual file size, which can be useful for detecting incomplete (e.g. truncated) ISO images. Isolyzer also extracts and reports some technical metadata from the filesystem-level headers.
 
-## Calculation of the expected file size
-
-### ISO 9660
-
-For an ISO 9660 file system, Isolyzer locates and parses its [Primary Volume Descriptor](http://wiki.osdev.org/ISO_9660#The_Primary_Volume_Descriptor) (PVD). From the PVD it 2. From the PVD it then reads the *Volume Space Size* field (which denotes the number of sectors/blocks in the image) and the *Logical Block Size* field (the number of bytes for each block). The expected file size is then calculated as:
-
-*SizeExpectedISO* =  (*Volume Space Size* - *Offset*) x *Logical Block Size*
-
-Here, *Offset* is a user-defined sector offset (its value is 0 by default, but see example 4 below for an explanation).  
-
-### Apple partition without Apple Partition Map
-
-An Apple partition contains either a HFS or HFS+ file system. In the simplest case these file systems can be identified by the presence of a *Master Directory Block* (for a HFS file system) or a *HFS Plus Header* (HFS+ file system) at 1024 bytes into the image. If either of these structures are found, they are parsed by Isolyzer. Both contain a *Block Count* and a *Block Size* field, which are used to calculate the expected size as:
-
-*SizeExpectedApple* =  *Block Count* x *Block Size*
-
-### Apple partition with Apple Partition Map
-
-In some cases Apple partitions are identified by the presence of a sequence of (one or more) [*Apple Partition Maps*](https://en.wikipedia.org/wiki/Apple_Partition_Map) starting at 512 bytes into the image. Images with an Apple Partition Map have a *Zero Block* at the beginning of the file, which contains *Block Count* and a *Block Size* fields that are used to calculate the expected size as:
-
-*SizeExpectedPM* =  *Block Count* x *Block Size*
-
-As an aside, the file system type in this case is identified from the Partition Map's *Partition Type* field. 
-
-### UDF
-
-For UDF file systems estimating the expected file size is less straightforward than the previous file systems, mainly because the equivalent field that denotes the number of blocks in the partition excludes the descriptor blocks that occur before and after the actual data. The following fields are relevant:
-
-* *Logical Block Size*, read from the Logical Volume Descriptor.
-* *Partition Length*, read from the Partition Descriptor.
-* *Partition Starting Location*, read from the Partition Descriptor.
-
-Using these fields, Isolyzer estimates the expected file size as:
-
-*SizExpectedUDF* = (*Partition Length* + *Partition Starting Location*) * *Logical Block Size*
-
-This corresponds to the combined size of the partition, the descriptor blocks that precede it and one additional descriptor block after the partition. However, often the partition is followed by *multiple* descriptor blocks (sometimes more than 100!). As there doesn't appear to be a way to determine the exact number of trailing descriptor blocks, the value of *SizExpectedUDF* is often smaller than the actual file size. This is something that might be improved in future versions of Isolyzer (e.g. by doing a deeper parsing of the UDF structure).
-
-## Hybrid file systems
-
-Many CD-ROMs and DVDs actually are [hybrids](https://en.wikipedia.org/wiki/Hybrid_disc) that combine multiple file systems. For instance, CD-ROMS with a hybrid ISO 9660/ Apple file system are common, as are DVDs with a UDF file system that is complemented by an additional ISO 9660 file system ([UDF Bridge](http://www.afterdawn.com/glossary/term.cfm/udf_bridge) format).
-
-For these hybrid file systems, Isolyzer assumes that the expected size is the largest value out of the individual values of all file systems:
-
-*SizeExpected* = max(*SizeExpectedISO*, *SizeExpectedApple*, *SizeExpectedPM*, *SizExpectedUDF*) 
-
-## Isolyzer output
- 
-### toolInfo element
-
-### image element
-
-### fileInfo element
-
-### statusInfo element
-
-### tests element
-
-### fileSystems element 
-
-<!--
-In practice the following 3 situations can occur:
-
-1. Actual size equals expected size (value of *tests/sizeAsExpected* in the output equals *True*) - perfect!
-2. Actual size is smaller than expected size (value of *tests/sizeAsExpected* in the output equals *False*, and value of *test/smallerThanExpected* equals *True*): in this case the image is damaged or otherwise incomplete.
-3. Actual size is (somewhat) larger than expected size (value of *tests/sizeAsExpected* in the output equals *False*, and value of *test/smallerThanExpected* equals *False*): this seems to be the case for the majority of ISO images on which I tested the tool. A possible cause might be that some CD-writers apparently add padding bytes (see for example [here](http://superuser.com/questions/220082/how-to-validate-a-dvd-against-an-iso) and [here](http://twiki.org/cgi-bin/view/Wikilearn/CdromMd5sumsAfterBurning)). I'm not sure if this information is accurate; in any case it does not typically indicate a damaged image.
-
-I wrote this tool after encountering [incomplete ISO images after running ddrescue](http://qanda.digipres.org/1076/incomplete-image-after-imaging-rom-prevent-and-detect-this) (most likely caused by some hardware issue), and subsequently discovering that [isovfy](http://manpages.ubuntu.com/manpages/hardy/man1/devdump.1.html) doesn't detect this at all (tried with version 1.1.11 on Linux Mint 17.1).
-
-The code is largely based on the following documentation and resources:
-
-* <http://wiki.osdev.org/ISO_9660> - explanation of the ISO 9660 filesystem
-* <https://github.com/libyal/libfshfs/blob/master/documentation/Hierarchical%20File%20System%20(HFS).asciidoc> - good explanation of HFS and HFS+ file systems
-* <https://opensource.apple.com/source/IOStorageFamily/IOStorageFamily-116/IOApplePartitionScheme.h> - Apple's code with Apple partitions and zero block definitions  
-* <https://en.wikipedia.org/wiki/Apple_Partition_Map#Layout> - overview of Apple partition map
-* <https://developer.apple.com/legacy/library/documentation/mac/Files/Files-102.html> - Apple documentation on Master Directory Block structure
-* <http://wiki.osdev.org/UDF> - overview of UDF
-* <https://www.ecma-international.org/publications/standards/Ecma-167.htm> - Volume and File Structure for Write-Once and Rewritable Media using Non-Sequential Recording for Information Interchange (general framework that forms basis of UDF)
-* <http://www.osta.org/specs/index.htm> - UDF specifications
-* <https://www.ecma-international.org/publications/files/ECMA-TR/ECMA%20TR-071.PDF> - UDF Bridge Format
-* <https://sites.google.com/site/udfintro/> - Wenguang's Introduction to Universal Disk Format (UDF)
-* <https://en.wikipedia.org/wiki/Hybrid_disc> - Wikipedia entry on hybrid discs
-
-## Limitations
-
-* Behaviour with ISO files that use the [Universal Disk Format (UDF)](https://en.wikipedia.org/wiki/Universal_Disk_Format) file system has not been thoroughly tested yet (although preliminary tests on a limited number of video DVDs resulted in expected file size that were equal to the actual size in all cases). 
-* No support (yet?) for HFS partitions that don't have a partition map (although they are detected)
-* Also a correct file *size* alone does not guarantee the integrity of the image (for this there's not getting around running a checksum on both the image and the physical source medium).
-* Other types of hybrid filesystems may exist (but I'm no aware of them, and the available documentation I could find about this is pretty limited)
-* At this stage the tool is still somewhat experimental; use at your own peril!
-
 ## Installation
 
-The easiest method to install Isolyzer is to use the [*pip* package manager](https://en.wikipedia.org/wiki/Pip_(package_manager)). You will need a recent version of *pip* (version 9.0 or more recent). Alternatively, Windows users can also use stand-alone 32-bit binaries that don't require Python (see below).
+The easiest method to install Isolyzer is to use the [*pip* package manager](https://en.wikipedia.org/wiki/Pip_(package_manager)). You will need a recent version of *pip* (version 9.0 or more recent). Alternatively, Windows users can also use stand-alone binaries that don't require Python (see below).
 
 ## Installation with pip 
 
@@ -157,7 +66,7 @@ No further configuration is needed in this case.
 
 Go to the *release* page of Isolyzer's Github repo: 
 
-<https://github.com/KBNLresearch/verifyISOSize/releases>
+<https://github.com/KBNLresearch/isolyzer/releases>
 
 Then download the file 'isolyzer_x.y.z_win32.zip' from the most recent release. Unzip the file to whatever location on your machine you like. You'll now be able to run Isolyzer from a command window by entering 'isolyzer', including its full path. For example, if you extracted the zip file isolyzer_0.2.0_win32.zip' to directory 'c:\test', you have to enter:
 
@@ -192,6 +101,101 @@ If you installed from the Windows binaries, repeat the instructions from the 'In
 `-v, --version` : show program's version number and exit;
 
 `--offset SECTOROFFSET`, `-o SECTOROFFSET` : offset (in sectors) of ISO image on CD (analogous to *-N* option in cdinfo)
+
+## Calculation of the expected file size
+
+### ISO 9660
+
+For an ISO 9660 file system, Isolyzer locates and parses its [Primary Volume Descriptor](http://wiki.osdev.org/ISO_9660#The_Primary_Volume_Descriptor) (PVD). From the PVD it 2. From the PVD it then reads the *Volume Space Size* field (which denotes the number of sectors/blocks in the image) and the *Logical Block Size* field (the number of bytes for each block). The expected file size is then calculated as:
+
+*SizeExpectedISO* =  (*Volume Space Size* - *Offset*) x *Logical Block Size*
+
+Here, *Offset* is a user-defined sector offset (its value is 0 by default, but see example 4 below for an explanation).  
+
+### Apple partition without Apple Partition Map
+
+An Apple partition contains either a HFS or HFS+ file system. In the simplest case these file systems can be identified by the presence of a *Master Directory Block* (for a HFS file system) or a *HFS Plus Header* (HFS+ file system) at 1024 bytes into the image. If either of these structures are found, they are parsed by Isolyzer. Both contain a *Block Count* and a *Block Size* field, which are used to calculate the expected size as:
+
+*SizeExpectedApple* =  *Block Count* x *Block Size*
+
+### Apple partition with Apple Partition Map
+
+In some cases Apple partitions are identified by the presence of a sequence of (one or more) [*Apple Partition Maps*](https://en.wikipedia.org/wiki/Apple_Partition_Map) starting at 512 bytes into the image. Images with an Apple Partition Map have a *Zero Block* at the beginning of the file, which contains *Block Count* and a *Block Size* fields that are used to calculate the expected size as:
+
+*SizeExpectedPM* =  *Block Count* x *Block Size*
+
+As an aside, the file system type in this case is identified from the Partition Map's *Partition Type* field. 
+
+### UDF
+
+For UDF file systems estimating the expected file size is less straightforward than the previous file systems, mainly because the equivalent field that denotes the number of blocks in the partition excludes the descriptor blocks that occur before and after the actual data. The following fields are relevant:
+
+* *Logical Block Size*, read from the Logical Volume Descriptor.
+* *Partition Length*, read from the Partition Descriptor.
+* *Partition Starting Location*, read from the Partition Descriptor.
+
+Using these fields, Isolyzer estimates the expected file size as:
+
+*SizExpectedUDF* = (*Partition Length* + *Partition Starting Location*) * *Logical Block Size*
+
+This corresponds to the combined size of the partition, the descriptor blocks that precede it and one additional descriptor block after the partition. However, often the partition is followed by *multiple* descriptor blocks (sometimes more than 100!). As there doesn't appear to be a way to determine the exact number of trailing descriptor blocks, the value of *SizExpectedUDF* is often smaller than the actual file size. This is something that might be improved in future versions of Isolyzer (e.g. by doing a deeper parsing of the UDF structure).
+
+## Hybrid file systems
+
+Many CD-ROMs and DVDs actually are [hybrids](https://en.wikipedia.org/wiki/Hybrid_disc) that combine multiple file systems. For instance, CD-ROMS with a hybrid ISO 9660/ Apple file system are common, as are DVDs with a UDF file system that is complemented by an additional ISO 9660 file system ([UDF Bridge](http://www.afterdawn.com/glossary/term.cfm/udf_bridge) format).
+
+For these hybrid file systems, Isolyzer assumes that the expected size is the largest value out of the individual values of all file systems:
+
+*SizeExpected* = max(*SizeExpectedISO*, *SizeExpectedApple*, *SizeExpectedPM*, *SizExpectedUDF*) 
+
+## Isolyzer output
+
+Isolyzer report its output in XML format; the top-level element is called *isolyzer*. 
+
+### toolInfo element
+
+### image element
+
+### fileInfo element
+
+### statusInfo element
+
+### tests element
+
+### fileSystems element 
+
+<!--
+In practice the following 3 situations can occur:
+
+1. Actual size equals expected size (value of *tests/sizeAsExpected* in the output equals *True*) - perfect!
+2. Actual size is smaller than expected size (value of *tests/sizeAsExpected* in the output equals *False*, and value of *test/smallerThanExpected* equals *True*): in this case the image is damaged or otherwise incomplete.
+3. Actual size is (somewhat) larger than expected size (value of *tests/sizeAsExpected* in the output equals *False*, and value of *test/smallerThanExpected* equals *False*): this seems to be the case for the majority of ISO images on which I tested the tool. A possible cause might be that some CD-writers apparently add padding bytes (see for example [here](http://superuser.com/questions/220082/how-to-validate-a-dvd-against-an-iso) and [here](http://twiki.org/cgi-bin/view/Wikilearn/CdromMd5sumsAfterBurning)). I'm not sure if this information is accurate; in any case it does not typically indicate a damaged image.
+
+I wrote this tool after encountering [incomplete ISO images after running ddrescue](http://qanda.digipres.org/1076/incomplete-image-after-imaging-rom-prevent-and-detect-this) (most likely caused by some hardware issue), and subsequently discovering that [isovfy](http://manpages.ubuntu.com/manpages/hardy/man1/devdump.1.html) doesn't detect this at all (tried with version 1.1.11 on Linux Mint 17.1).
+
+The code is largely based on the following documentation and resources:
+
+* <http://wiki.osdev.org/ISO_9660> - explanation of the ISO 9660 filesystem
+* <https://github.com/libyal/libfshfs/blob/master/documentation/Hierarchical%20File%20System%20(HFS).asciidoc> - good explanation of HFS and HFS+ file systems
+* <https://opensource.apple.com/source/IOStorageFamily/IOStorageFamily-116/IOApplePartitionScheme.h> - Apple's code with Apple partitions and zero block definitions  
+* <https://en.wikipedia.org/wiki/Apple_Partition_Map#Layout> - overview of Apple partition map
+* <https://developer.apple.com/legacy/library/documentation/mac/Files/Files-102.html> - Apple documentation on Master Directory Block structure
+* <http://wiki.osdev.org/UDF> - overview of UDF
+* <https://www.ecma-international.org/publications/standards/Ecma-167.htm> - Volume and File Structure for Write-Once and Rewritable Media using Non-Sequential Recording for Information Interchange (general framework that forms basis of UDF)
+* <http://www.osta.org/specs/index.htm> - UDF specifications
+* <https://www.ecma-international.org/publications/files/ECMA-TR/ECMA%20TR-071.PDF> - UDF Bridge Format
+* <https://sites.google.com/site/udfintro/> - Wenguang's Introduction to Universal Disk Format (UDF)
+* <https://en.wikipedia.org/wiki/Hybrid_disc> - Wikipedia entry on hybrid discs
+
+## Limitations
+
+* Behaviour with ISO files that use the [Universal Disk Format (UDF)](https://en.wikipedia.org/wiki/Universal_Disk_Format) file system has not been thoroughly tested yet (although preliminary tests on a limited number of video DVDs resulted in expected file size that were equal to the actual size in all cases). 
+* No support (yet?) for HFS partitions that don't have a partition map (although they are detected)
+* Also a correct file *size* alone does not guarantee the integrity of the image (for this there's not getting around running a checksum on both the image and the physical source medium).
+* Other types of hybrid filesystems may exist (but I'm no aware of them, and the available documentation I could find about this is pretty limited)
+* At this stage the tool is still somewhat experimental; use at your own peril!
+
+
 
 
 ## Examples

@@ -230,9 +230,10 @@ def stripSurrogatePairs(ustring):
 
 def parseCommandLine():
     # Add arguments
-    parser.add_argument('ISOImage', 
+    parser.add_argument('ISOImages', 
         action = "store", 
         type = str, 
+        nargs='+',
         help = "input ISO image(s) (wildcards allowed)")
     parser.add_argument('--version', '-v',
         action = 'version', 
@@ -690,7 +691,7 @@ def main():
     args = parseCommandLine()
          
     # Input
-    ISOImages =  glob.glob(args.ISOImage)
+    ISOImages = args.ISOImages
     
     # Sector offset
     sectorOffset = args.sectorOffset
