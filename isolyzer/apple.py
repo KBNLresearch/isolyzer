@@ -4,7 +4,7 @@
 
 import xml.etree.ElementTree as ET
 
-if __package__ is "isolyzer":
+if __package__ == "isolyzer":
     # Use relative imports if run from package
     from . import byteconv as bc
     from . import shared as shared

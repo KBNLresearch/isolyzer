@@ -32,7 +32,7 @@ from six import u
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
-if __package__ is None:
+if __package__ == None:
     import iso9660 as iso
     import udf as udf
     import apple as apple
@@ -52,7 +52,7 @@ scriptPath, scriptName = os.path.split(sys.argv[0])
 if len(scriptName) == 0:
     scriptName = 'isolyzer'
 
-__version__ = '1.0.0b1'
+__version__ = '1.0.0b2'
 
 # Create parser
 parser = argparse.ArgumentParser(
