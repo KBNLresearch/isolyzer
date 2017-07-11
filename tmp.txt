@@ -1,3 +1,0 @@
-1.0.0b1.bN
-fixme:msvcrt:__clean_type_info_names_internal (0x1d1c8ba0) stub
-fixme:msvcrt:__clean_type_info_names_internal (0x1e26e980) stub

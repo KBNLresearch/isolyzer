@@ -56,7 +56,7 @@ __version__ = '1.0.0b1.bN'
 
 # Create parser
 parser = argparse.ArgumentParser(
-    description="Extract technical information from ISO 9660 image (no support for UDF file systems yet!)")
+    description="Verify file size of ISO image and extract technical information")
 
 def main_is_frozen():
     return (hasattr(sys, "frozen") or # new py2exe
