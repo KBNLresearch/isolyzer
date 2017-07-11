@@ -2,15 +2,13 @@
 
 #
 # Dependencies:
-# - Wine environment with Python 2.7, pyInstaller and all isolyzer dependencies
+# - Wine environment with Python, pyInstaller and all isolyzer dependencies
 # - Spec file
-# NOTE: may work with some 3.x Python versions as well, but untested (latest version of
-# PyInstaller is broken for Python 3.6!)
 
 # CONFIGURATION 
 
 # Python
-# Note that to produce a 32-bit binary we need a 32-bit Python version!
+# Note that to produce a 64-bit binary we need a 64-bit Python version!
 pythonWine=~/.wine/drive_c/Python27/python.exe
 pyInstallerWine=~/.wine/drive_c/Python27/Scripts/pyinstaller.exe
 
@@ -18,13 +16,13 @@ pyInstallerWine=~/.wine/drive_c/Python27/Scripts/pyinstaller.exe
 scriptBaseName=isolyzer
 
 # PyInstaller spec file that defines build options
-specFile=win32.spec
+specFile=win64.spec
 
 # Working directory
 workDir=$PWD
 
 # Directory where build is created (should be identical to 'name' in 'coll' in spec file!!)
-distDir=./dist/win32/
+distDir=./dist/win64/
 
 # Executes isolyzer with -v option and stores output to 
 # env variable 'version'
@@ -37,7 +35,7 @@ rm temp.txt
 $pyInstallerWine $specFile --distpath=$distDir
 
 # Generate name for ZIP file
-zipName="$scriptBaseName"_"$version"_win32.zip
+zipName="$scriptBaseName"_"$version"_win64.zip
 
 # Create ZIP file
 cd $distDir
