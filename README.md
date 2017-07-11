@@ -62,6 +62,13 @@ Simply enter:
 
 No further configuration is needed in this case. 
 
+### Note on pre-releases
+
+The above command lines will only install stable versions of isolyzer. In order to install the latest pre-release, add the `--pre` switch. For example:
+
+    sudo -H pip install isolyzer --pre
+
+
 ## Installation from stand-alone binaries (Windows)
 
 Go to the *release* page of Isolyzer's Github repo: 
@@ -154,11 +161,53 @@ Isolyzer report its output in XML format; the top-level element is called *isoly
 
 ### toolInfo element
 
+
+This element holds information about Isolyzer. Currently it contains
+the following sub-elements:
+
+* *toolName*: name of the analysis tool (i.e. *isolyzer.py* or
+*isolyzer*, depending on whether the Python script or the Windows
+binaries were used)
+
+* *toolVersion*: version of Isolyzer
+
 ### image element
 
 ### fileInfo element
 
+This element holds general information about the analysed file.
+Currently it contains the following sub-elements:
+
+* *filename*: name of the analysed file without its path (e.g.
+“rubbish.iso”)
+
+* *filePath*: name of the analysed file, including its full absolute
+path (e.g. “d:\\data\\images\\rubbish.iso”)
+
+* *fileSizeInBytes*: file size in bytes
+
+* *fileLastModified*: last modified date and time
+
 ### statusInfo element
+
+This element holds general information about about the status of 
+Isolyzer's attempt at processing a file. It tells you whether 
+the analysis could be completed without any internal
+errors. It contains the following sub-elements:
+
+* *success*: a Boolean flag that indicates whether the validation attempt 
+completed normally (“True”) or not (“False”). A value of “False” indicates
+an internal error that prevented Isolyzer from processing the file. 
+
+* *failureMessage*: if the validation attempt failed (value of *success* 
+equals “False”), this field gives further details about the reason of the failure.
+Examples are:
+
+        memory error (file size too large)
+
+        runtime error (please report to developers)
+
+        unknown error (please report to developers)
 
 ### tests element
 
