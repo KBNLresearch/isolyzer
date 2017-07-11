@@ -68,9 +68,9 @@ Go to the *release* page of Isolyzer's Github repo:
 
 <https://github.com/KBNLresearch/isolyzer/releases>
 
-Then download the file 'isolyzer_x.y.z_win32.zip' from the most recent release. Unzip the file to whatever location on your machine you like. You'll now be able to run Isolyzer from a command window by entering 'isolyzer', including its full path. For example, if you extracted the zip file isolyzer_0.2.0_win32.zip' to directory 'c:\test', you have to enter:
+Then download the file 'isolyzer_x_y_z_win32.zip' from the most recent release. Unzip the file to whatever location on your machine you like. You'll now be able to run Isolyzer from a command window by entering 'isolyzer', including its full path. For example, if you extracted the zip file isolyzer_0_2_0_win32.zip' to directory 'c:\test', you have to enter:
 
-    c:\test\isolyzer_0.2.0_win32\isolyzer
+    c:\test\isolyzer_0_2_0_win32\isolyzer
     
 ## Upgrade Isolyzer to the latest version 
 
