@@ -3,7 +3,7 @@
 #
 # Dependencies:
 # - Wine environment with Python, pyInstaller and all isolyzer dependencies
-# - a spec file
+# - Spec file
 
 # CONFIGURATION 
 
@@ -18,32 +18,35 @@ scriptBaseName=isolyzer
 # PyInstaller spec file that defines build options
 specFile=win32.spec
 
+# Working directory
+workDir=$PWD
+
 # Directory where build is created (should be identical to 'name' in 'coll' in spec file!!)
-# TODO is this even used, as default name seems to be 'dist'?!
-distDir=./dist_win32/
+distDir=./dist/win32/
 
 # Executes isolyzer with -v option and stores output to 
 # env variable 'version'
+# Also trim trailing EOL character and replace '.' by '_' 
 wine $pythonWine ./$scriptBaseName/$scriptBaseName.py -v 2> temp.txt
-version=$(head -n 1 temp.txt)
+version=$(head -n 1 temp.txt | tr -d '\r' |tr '.' '_' )
 rm temp.txt
 
 # Build binaries
-$pyInstallerWine $specFile
+$pyInstallerWine $specFile --distpath=$distDir
 
 # Generate name for ZIP file
 zipName="$scriptBaseName"_"$version"_win32.zip
 
 # Create ZIP file
-cd ./dist
-zip -r $zipName isolyzer
-cd ..
+cd $distDir
+zip -r $zipName $scriptBaseName
+cd $workDir
 
 # CLEANUP 
 
 # Delete build directory
 rm -r ./build
-rm -r  ./dist/$scriptBaseName
+rm -r  $distDir/$scriptBaseName
 
 echo "Done!"
 

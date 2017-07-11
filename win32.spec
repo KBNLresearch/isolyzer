@@ -28,4 +28,4 @@ coll = COLLECT(exe,
                a.datas,
                strip=None,
                upx=True,
-               name=os.path.join('dist_win64', 'isolyzer'))
+               name=os.path.join('dist_win32', 'isolyzer'))
