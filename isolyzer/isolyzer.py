@@ -44,7 +44,7 @@ else:
     from . import udf as udf
     from . import apple as apple
     from . import byteconv as bc
-    import shared as shared
+    from . import shared as shared
 
 scriptPath, scriptName = os.path.split(sys.argv[0])
 
@@ -52,7 +52,7 @@ scriptPath, scriptName = os.path.split(sys.argv[0])
 if len(scriptName) == 0:
     scriptName = 'isolyzer'
 
-__version__ = '1.0.0b2'
+__version__ = '1.0.0b3'
 
 # Create parser
 parser = argparse.ArgumentParser(
