@@ -107,7 +107,7 @@ If you installed from the Windows binaries, repeat the instructions from the 'In
 
 `-v, --version` : show program's version number and exit;
 
-`--offset SECTOROFFSET`, `-o SECTOROFFSET` : offset (in sectors) of ISO image on CD (analogous to *-N* option in cdinfo)
+`--offset SECTOROFFSET`, `-o SECTOROFFSET` : offset (in sectors) of ISO image on CD (analogous to *-N* option in cdinfo; only affects size calculation for ISO 9660 file systems)
 
 ## Calculation of the expected file size
 
@@ -157,40 +157,45 @@ For these hybrid file systems, Isolyzer assumes that the expected size is the la
 
 ## Isolyzer output
 
-Isolyzer report its output in XML format; the top-level element is called *isolyzer*. 
+Isolyzer report its output in XML format; the top-level element is called *isolyzer*. The *isolyzer* element in turn contains the following child elements:
 
-### toolInfo element
+* *toolInfo*: contains information about Isolyzer
 
+* *image*: contains information about the analysed image
 
-This element holds information about Isolyzer. Currently it contains
-the following sub-elements:
+## toolInfo element
 
-* *toolName*: name of the analysis tool (i.e. *isolyzer.py* or
-*isolyzer*, depending on whether the Python script or the Windows
+This *toolInfo* element holds information about Isolyzer. Currently it contains
+the following  child elements:
+
+* *toolName*: name of the analysis tool (i.e. *isolyzer.py* or *isolyzer*, depending on whether the Python script or the Windows
 binaries were used)
-
 * *toolVersion*: version of Isolyzer
 
-### image element
+## image element
 
-### fileInfo element
+The *image* element holds information about an analysed image. It contains the following child elements:
+
+* *fileInfo*: contains general information about the analysed file
+* *statusInfo*: contains information about about the status of Isolyzer's attempt at processing the file
+* *tests*: contains outcomes of the tests that are performed by Isolyzer 
+* *fileSystems*: contains technical metadata that are extracted from the filesystem-level headers.
+
+## fileInfo element
 
 This element holds general information about the analysed file.
 Currently it contains the following sub-elements:
 
 * *filename*: name of the analysed file without its path (e.g.
 “rubbish.iso”)
-
 * *filePath*: name of the analysed file, including its full absolute
 path (e.g. “d:\\data\\images\\rubbish.iso”)
-
 * *fileSizeInBytes*: file size in bytes
-
 * *fileLastModified*: last modified date and time
 
-### statusInfo element
+## statusInfo element
 
-This element holds general information about about the status of 
+This element describes the status of 
 Isolyzer's attempt at processing a file. It tells you whether 
 the analysis could be completed without any internal
 errors. It contains the following sub-elements:
@@ -198,7 +203,6 @@ errors. It contains the following sub-elements:
 * *success*: a Boolean flag that indicates whether the validation attempt 
 completed normally (“True”) or not (“False”). A value of “False” indicates
 an internal error that prevented Isolyzer from processing the file. 
-
 * *failureMessage*: if the validation attempt failed (value of *success* 
 equals “False”), this field gives further details about the reason of the failure.
 Examples are:
@@ -209,205 +213,198 @@ Examples are:
 
         unknown error (please report to developers)
 
-### tests element
+## tests element
 
-### fileSystems element 
+This element contains the outcomes of the tests that are performed by Isolyzer. Currently it includes the following tests:
 
-<!--
-In practice the following 3 situations can occur:
+* *containsKnownFileSystem*: Boolean (True/False) flag that indicates whether any of the supported file systems were found by Isolyzer
+* *sizeExpected*: expected file size of the image in bytes, based on the filesystem-level headers
+* *sizeActual*: actual size of the image in bytes
+* *sizeDifference*: difference between actual and expected size in bytes (*sizeActual* - *sizeExpected*)
+* *sizeDifferenceSectors*: difference between actual and expected size, expressed as a number of 2048-bytes sectors (= *sizeDifference*/2048)
+* *sizeAsExpected*: Boolean (True/False) flag that indicates whether the actual image size is identical to the expected value 
+* *smallerThanExpected*: Boolean (True/False) flag that indicates whether the actual image size is smaller than the expected value
 
-1. Actual size equals expected size (value of *tests/sizeAsExpected* in the output equals *True*) - perfect!
-2. Actual size is smaller than expected size (value of *tests/sizeAsExpected* in the output equals *False*, and value of *test/smallerThanExpected* equals *True*): in this case the image is damaged or otherwise incomplete.
-3. Actual size is (somewhat) larger than expected size (value of *tests/sizeAsExpected* in the output equals *False*, and value of *test/smallerThanExpected* equals *False*): this seems to be the case for the majority of ISO images on which I tested the tool. A possible cause might be that some CD-writers apparently add padding bytes (see for example [here](http://superuser.com/questions/220082/how-to-validate-a-dvd-against-an-iso) and [here](http://twiki.org/cgi-bin/view/Wikilearn/CdromMd5sumsAfterBurning)). I'm not sure if this information is accurate; in any case it does not typically indicate a damaged image.
+### Interpretation of the size verification outcome
 
-I wrote this tool after encountering [incomplete ISO images after running ddrescue](http://qanda.digipres.org/1076/incomplete-image-after-imaging-rom-prevent-and-detect-this) (most likely caused by some hardware issue), and subsequently discovering that [isovfy](http://manpages.ubuntu.com/manpages/hardy/man1/devdump.1.html) doesn't detect this at all (tried with version 1.1.11 on Linux Mint 17.1).
+Often the value of *sizeActual* exceeds *sizeExpected* by several sectors. A possible cause might be that some CD-writers apparently add padding bytes (see for example [here](http://superuser.com/questions/220082/how-to-validate-a-dvd-against-an-iso) and [here](http://twiki.org/cgi-bin/view/Wikilearn/CdromMd5sumsAfterBurning)). For *UDF* file systems *sizeExpected* is typically several sectors smaller than *sizeActual* because of the presence of trailing descriptor blocks that are currently unaccounted for in the calculation of *sizeExpected* (see also the preceding section *Calculation of the expected file size*).
 
-The code is largely based on the following documentation and resources:
+All of the above things are usually nothing to worry about. In cases where *sizeActual* is smaller than *sizeExpected*, it is likely that the image is incomplete or otherwise corrupted. For a typical imaging QA workflows you will probably want to make sure that the value of *containsKnownFileSystem* equals *True*, and *smallerThanExpected* is *False*.
 
-* <http://wiki.osdev.org/ISO_9660> - explanation of the ISO 9660 filesystem
-* <https://github.com/libyal/libfshfs/blob/master/documentation/Hierarchical%20File%20System%20(HFS).asciidoc> - good explanation of HFS and HFS+ file systems
-* <https://opensource.apple.com/source/IOStorageFamily/IOStorageFamily-116/IOApplePartitionScheme.h> - Apple's code with Apple partitions and zero block definitions  
-* <https://en.wikipedia.org/wiki/Apple_Partition_Map#Layout> - overview of Apple partition map
-* <https://developer.apple.com/legacy/library/documentation/mac/Files/Files-102.html> - Apple documentation on Master Directory Block structure
-* <http://wiki.osdev.org/UDF> - overview of UDF
-* <https://www.ecma-international.org/publications/standards/Ecma-167.htm> - Volume and File Structure for Write-Once and Rewritable Media using Non-Sequential Recording for Information Interchange (general framework that forms basis of UDF)
-* <http://www.osta.org/specs/index.htm> - UDF specifications
-* <https://www.ecma-international.org/publications/files/ECMA-TR/ECMA%20TR-071.PDF> - UDF Bridge Format
-* <https://sites.google.com/site/udfintro/> - Wenguang's Introduction to Universal Disk Format (UDF)
-* <https://en.wikipedia.org/wiki/Hybrid_disc> - Wikipedia entry on hybrid discs
+## fileSystems element
+
+The *fileSystems* element contains one or more *fileSystem* elements.
+
+## fileSystem element
+
+The *fileSystem* element contains technical metadata that are extracted from the filesystem-level headers. This element is repeated for each identified file system. Each *fileSystem* element has a *TYPE* attribute whose value indicates the file system. Currently supported values are:
+
+* *ISO 9660*
+* *UDF*
+* *HFS*
+* *HFS+*
+* *MFS*
+
+The sub-elements inside each *fileSystem* element depend on its respective file system. Note that for each file system Isolyzer only extracts a subset of all headers (primarily those that are needed for the file size verification).  
 
 ## Limitations
 
-* Behaviour with ISO files that use the [Universal Disk Format (UDF)](https://en.wikipedia.org/wiki/Universal_Disk_Format) file system has not been thoroughly tested yet (although preliminary tests on a limited number of video DVDs resulted in expected file size that were equal to the actual size in all cases). 
-* No support (yet?) for HFS partitions that don't have a partition map (although they are detected)
-* Also a correct file *size* alone does not guarantee the integrity of the image (for this there's not getting around running a checksum on both the image and the physical source medium).
-* Other types of hybrid filesystems may exist (but I'm no aware of them, and the available documentation I could find about this is pretty limited)
-* At this stage the tool is still somewhat experimental; use at your own peril!
-
-
-
+* Isolyzer does not 'validate' any of the supported file systems! It merely makes an educated guess about the expected file size and then compares this figure against the actual file size. 
+* A correct file *size* alone does not guarantee the integrity of the image (for this there's not getting around running a checksum on both the image and the physical source medium).
+* At this stage Isolyzer has only had limited testing with UDF, HFS and HFS+ file systems, so there's a real possibility of some hidden issues lurking. Use at your own peril! 
 
 ## Examples
 
-(All files available in *testFiles* folder of this repo.) 
+Below are some examples of Isolyzer's output for different kinds of images. Note that the images that were used here are all available in the [*testFiles*](./testFiles) folder of this repo. 
 
-### Example 1: ISO image has expected size 
+### Example 1: ISO 9660 image has expected size 
 
-    isolyzer minimal.iso
+    isolyzer iso9660.iso
     
 Output:
 
+    <?xml version="1.0" ?>
     <isolyzer>
+        <toolInfo>
+            <toolName>isolyzer</toolName>
+            <toolVersion>1.0.0b3</toolVersion>
+        </toolInfo>
         <image>
             <fileInfo>
-                <fileName>minimal.iso</fileName>
-                <filePath>/home/johan/verifyISOSize/testFiles/minimal.iso</filePath>
-                <fileSizeInBytes>358400</fileSizeInBytes>
-                <fileLastModified>Thu Jan 12 12:48:49 2017</fileLastModified>
+                <fileName>iso9660.iso</fileName>
+                <filePath>/home/johan/isolyzer/testFiles/iso9660.iso</filePath>
+                <fileSizeInBytes>442368</fileSizeInBytes>
+                <fileLastModified>Fri Jun 30 18:31:33 2017</fileLastModified>
             </fileInfo>
             <statusInfo>
                 <success>True</success>
             </statusInfo>
             <tests>
-                <containsISO9660Signature>True</containsISO9660Signature>
-                <containsApplePartitionMap>False</containsApplePartitionMap>
-                <containsAppleHFSHeader>False</containsAppleHFSHeader>
-                <containsAppleMasterDirectoryBlock>False</containsAppleMasterDirectoryBlock>
-                <parsedPrimaryVolumeDescriptor>True</parsedPrimaryVolumeDescriptor>
-                <sizeExpected>358400</sizeExpected>
-                <sizeActual>358400</sizeActual>
+                <containsKnownFileSystem>True</containsKnownFileSystem>
+                <sizeExpected>442368</sizeExpected>
+                <sizeActual>442368</sizeActual>
                 <sizeDifference>0</sizeDifference>
+                <sizeDifferenceSectors>0</sizeDifferenceSectors>
                 <sizeAsExpected>True</sizeAsExpected>
                 <smallerThanExpected>False</smallerThanExpected>
             </tests>
-            <properties>
-                <primaryVolumeDescriptor>
-                    <typeCode>1</typeCode>
-                    <standardIdentifier>CD001</standardIdentifier>
-                    <version>1</version>
-                    <systemIdentifier>LINUX</systemIdentifier>
-                    <volumeIdentifier>CDROM</volumeIdentifier>
-                    <volumeSpaceSize>175</volumeSpaceSize>
-                    <volumeSetSize>1</volumeSetSize>
-                    <volumeSequenceNumber>1</volumeSequenceNumber>
-                    <logicalBlockSize>2048</logicalBlockSize>
-                    <pathTableSize>10</pathTableSize>
-                    <typeLPathTableLocation>19</typeLPathTableLocation>
-                    <optionalTypeLPathTableLocation>0</optionalTypeLPathTableLocation>
-                    <typeMPathTableLocation>21</typeMPathTableLocation>
-                    <optionalTypeMPathTableLocation>0</optionalTypeMPathTableLocation>
-                    <volumeSetIdentifier/>
-                    <publisherIdentifier/>
-                    <dataPreparerIdentifier/>
-                    <applicationIdentifier>GENISOIMAGE ISO 9660/HFS FILESYSTEM CREATOR (C) 1993 E.YOUNGDALE (C) 1997-2006 J.PEARSON/J.SCHILLING (C) 2006-2007 CDRKIT TEAM</applicationIdentifier>
-                    <copyrightFileIdentifier/>
-                    <abstractFileIdentifier/>
-                    <bibliographicFileIdentifier/>
-                    <volumeCreationDateAndTime>2015/09/05, 17:45:07</volumeCreationDateAndTime>
-                    <volumeModificationDateAndTime>2015/09/05, 17:45:07</volumeModificationDateAndTime>
-                    <volumeExpirationDateAndTime>0/00/00, 00:00:00</volumeExpirationDateAndTime>
-                    <volumeEffectiveDateAndTime>2015/09/05, 17:45:07</volumeEffectiveDateAndTime>
-                    <fileStructureVersion>1</fileStructureVersion>
-                </primaryVolumeDescriptor>
-            </properties>
+            <fileSystems>
+                <fileSystem TYPE="ISO 9660">
+                    <primaryVolumeDescriptor>
+                        <typeCode>1</typeCode>
+                        <standardIdentifier>CD001</standardIdentifier>
+                        <version>1</version>
+                        <systemIdentifier>LINUX</systemIdentifier>
+                        <volumeIdentifier>ISO 9660 only demo</volumeIdentifier>
+                        <volumeSpaceSize>216</volumeSpaceSize>
+                        <volumeSetSize>1</volumeSetSize>
+                        <volumeSequenceNumber>1</volumeSequenceNumber>
+                        <logicalBlockSize>2048</logicalBlockSize>
+                        <pathTableSize>10</pathTableSize>
+                        <typeLPathTableLocation>20</typeLPathTableLocation>
+                        <optionalTypeLPathTableLocation>0</optionalTypeLPathTableLocation>
+                        <typeMPathTableLocation>22</typeMPathTableLocation>
+                        <optionalTypeMPathTableLocation>0</optionalTypeMPathTableLocation>
+                        <volumeSetIdentifier/>
+                        <publisherIdentifier/>
+                        <dataPreparerIdentifier/>
+                        <applicationIdentifier>MKISOFS ISO9660/HFS/UDF FILESYSTEM BUILDER &amp; CDRECORD CD/DVD/BluRay CREATOR (C) 1993 E.YOUNGDALE (C) 1997 J.PEARSON/J.SCHILLING</applicationIdentifier>
+                        <copyrightFileIdentifier/>
+                        <abstractFileIdentifier/>
+                        <bibliographicFileIdentifier/>
+                        <volumeCreationDateAndTime>2017/06/30, 18:31:33</volumeCreationDateAndTime>
+                        <volumeModificationDateAndTime>2017/06/30, 18:31:33</volumeModificationDateAndTime>
+                        <volumeExpirationDateAndTime>0/00/00, 00:00:00</volumeExpirationDateAndTime>
+                        <volumeEffectiveDateAndTime>2017/06/30, 18:31:33</volumeEffectiveDateAndTime>
+                        <fileStructureVersion>1</fileStructureVersion>
+                    </primaryVolumeDescriptor>
+                </fileSystem>
+            </fileSystems>
         </image>
     </isolyzer>
-### Example 2: ISO image smaller than expected size
 
-    isolyzer minimal_trunc.iso
+### Example 2: ISO 9660 image smaller than expected size
+
+    isolyzer iso9660_trunc.iso
 
 Output:
 
+    <?xml version="1.0" ?>
     <isolyzer>
+        <toolInfo>
+            <toolName>isolyzer</toolName>
+            <toolVersion>1.0.0b3</toolVersion>
+        </toolInfo>
         <image>
             <fileInfo>
-                <fileName>minimal_trunc.iso</fileName>
-                <filePath>/home/johan/verifyISOSize/testFiles/minimal_trunc.iso</filePath>
+                <fileName>iso9660_trunc.iso</fileName>
+                <filePath>/home/johan/isolyzer/testFiles/iso9660_trunc.iso</filePath>
                 <fileSizeInBytes>49157</fileSizeInBytes>
-                <fileLastModified>Thu Jan 12 13:01:00 2017</fileLastModified>
+                <fileLastModified>Fri Jun 30 18:31:33 2017</fileLastModified>
             </fileInfo>
             <statusInfo>
                 <success>True</success>
             </statusInfo>
             <tests>
-                <containsISO9660Signature>True</containsISO9660Signature>
-                <containsApplePartitionMap>False</containsApplePartitionMap>
-                <containsAppleHFSHeader>False</containsAppleHFSHeader>
-                <containsAppleMasterDirectoryBlock>False</containsAppleMasterDirectoryBlock>
-                <parsedPrimaryVolumeDescriptor>True</parsedPrimaryVolumeDescriptor>
-                <sizeExpected>358400</sizeExpected>
+                <containsKnownFileSystem>True</containsKnownFileSystem>
+                <sizeExpected>442368</sizeExpected>
                 <sizeActual>49157</sizeActual>
-                <sizeDifference>-309243</sizeDifference>
+                <sizeDifference>-393211</sizeDifference>
+                <sizeDifferenceSectors>-192</sizeDifferenceSectors>
                 <sizeAsExpected>False</sizeAsExpected>
                 <smallerThanExpected>True</smallerThanExpected>
             </tests>
-            <properties>
-                <primaryVolumeDescriptor>
-                    <typeCode>1</typeCode>
-                    <standardIdentifier>CD001</standardIdentifier>
-                    <version>1</version>
-                    <systemIdentifier>LINUX</systemIdentifier>
-                    <volumeIdentifier>CDROM</volumeIdentifier>
-                    <volumeSpaceSize>175</volumeSpaceSize>
-                    <volumeSetSize>1</volumeSetSize>
-                    <volumeSequenceNumber>1</volumeSequenceNumber>
-                    <logicalBlockSize>2048</logicalBlockSize>
-                    <pathTableSize>10</pathTableSize>
-                    <typeLPathTableLocation>19</typeLPathTableLocation>
-                    <optionalTypeLPathTableLocation>0</optionalTypeLPathTableLocation>
-                    <typeMPathTableLocation>21</typeMPathTableLocation>
-                    <optionalTypeMPathTableLocation>0</optionalTypeMPathTableLocation>
-                    <volumeSetIdentifier/>
-                    <publisherIdentifier/>
-                    <dataPreparerIdentifier/>
-                    <applicationIdentifier>GENISOIMAGE ISO 9660/HFS FILESYSTEM CREATOR (C) 1993 E.YOUNGDALE (C) 1997-2006 J.PEARSON/J.SCHILLING (C) 2006-2007 CDRKIT TEAM</applicationIdentifier>
-                    <copyrightFileIdentifier/>
-                    <abstractFileIdentifier/>
-                    <bibliographicFileIdentifier/>
-                    <volumeCreationDateAndTime>2015/09/05, 17:45:07</volumeCreationDateAndTime>
-                    <volumeModificationDateAndTime>2015/09/05, 17:45:07</volumeModificationDateAndTime>
-                    <volumeExpirationDateAndTime>0/00/00, 00:00:00</volumeExpirationDateAndTime>
-                    <volumeEffectiveDateAndTime>2015/09/05, 17:45:07</volumeEffectiveDateAndTime>
-                    <fileStructureVersion>1</fileStructureVersion>
-                </primaryVolumeDescriptor>
-            </properties>
+            <fileSystems>
+                <fileSystem TYPE="ISO 9660">
+                    <primaryVolumeDescriptor>
+                        <typeCode>1</typeCode>
+                        <standardIdentifier>CD001</standardIdentifier>
+                          ::
+                          ::
+                        <fileStructureVersion>1</fileStructureVersion>
+                    </primaryVolumeDescriptor>
+                </fileSystem>
+            </fileSystems>
         </image>
     </isolyzer>
+
     
 ### Example 3: ISO truncated before Primary Volume Descriptor
 
-    isolyzer minimal_trunc_nopvd.iso
+    isolyzer iso9660_nopvd.iso
     
 Output:
 
+    <?xml version="1.0" ?>
     <isolyzer>
+        <toolInfo>
+            <toolName>isolyzer</toolName>
+            <toolVersion>1.0.0b3</toolVersion>
+        </toolInfo>
         <image>
             <fileInfo>
-                <fileName>minimal_trunc_nopvd.iso</fileName>
-                <filePath>/home/johan/verifyISOSize/testFiles/minimal_trunc_nopvd.iso</filePath>
+                <fileName>iso9660_nopvd.iso</fileName>
+                <filePath>/home/johan/isolyzer/testFiles/iso9660_nopvd.iso</filePath>
                 <fileSizeInBytes>32860</fileSizeInBytes>
-                <fileLastModified>Thu Jan 12 14:51:26 2017</fileLastModified>
+                <fileLastModified>Fri Jun 30 18:31:33 2017</fileLastModified>
             </fileInfo>
             <statusInfo>
                 <success>True</success>
             </statusInfo>
             <tests>
-                <containsISO9660Signature>False</containsISO9660Signature>
-                <containsApplePartitionMap>False</containsApplePartitionMap>
-                <containsAppleHFSHeader>False</containsAppleHFSHeader>
-                <containsAppleMasterDirectoryBlock>False</containsAppleMasterDirectoryBlock>
-                <parsedPrimaryVolumeDescriptor>False</parsedPrimaryVolumeDescriptor>
+                <containsKnownFileSystem>False</containsKnownFileSystem>
                 <sizeExpected>0</sizeExpected>
                 <sizeActual>32860</sizeActual>
                 <sizeDifference>32860</sizeDifference>
+                <sizeDifferenceSectors>16</sizeDifferenceSectors>
                 <sizeAsExpected>False</sizeAsExpected>
                 <smallerThanExpected>False</smallerThanExpected>
             </tests>
-            <properties/>
+            <fileSystems/>
         </image>
     </isolyzer>
 
-### Example 4: ISO image from 'enhanced' audio CD (multisession)
+### Example 4: ISO 9660 image from 'enhanced' audio CD (multisession)
 
 First use *cd-info* on the physical carrier to find out the start sector of the data session:
 
@@ -421,16 +418,20 @@ Then look for this bit:
 
 So start sector of the data session is 21917. Then:
 
-    isolyzer.py --offset 21917 multisession.iso
+    isolyzer --offset 21917 multisession.iso
 
-Result:
+Output:
 
     <?xml version="1.0" ?>
     <isolyzer>
+        <toolInfo>
+            <toolName>isolyzer</toolName>
+            <toolVersion>1.0.0b3</toolVersion>
+        </toolInfo>
         <image>
             <fileInfo>
                 <fileName>multisession.iso</fileName>
-                <filePath>/home/johan/verifyISOSize/testFiles/multisession.iso</filePath>
+                <filePath>/home/johan/isolyzer/testFiles/multisession.iso</filePath>
                 <fileSizeInBytes>6950912</fileSizeInBytes>
                 <fileLastModified>Wed Apr 19 14:39:27 2017</fileLastModified>
             </fileInfo>
@@ -438,51 +439,161 @@ Result:
                 <success>True</success>
             </statusInfo>
             <tests>
-                <containsISO9660Signature>True</containsISO9660Signature>
-                <containsApplePartitionMap>False</containsApplePartitionMap>
-                <containsAppleHFSHeader>False</containsAppleHFSHeader>
-                <containsAppleMasterDirectoryBlock>False</containsAppleMasterDirectoryBlock>
-                <parsedPrimaryVolumeDescriptor>True</parsedPrimaryVolumeDescriptor>
+                <containsKnownFileSystem>True</containsKnownFileSystem>
                 <sizeExpected>6946816</sizeExpected>
                 <sizeActual>6950912</sizeActual>
                 <sizeDifference>4096</sizeDifference>
+                <sizeDifferenceSectors>2</sizeDifferenceSectors>
                 <sizeAsExpected>False</sizeAsExpected>
                 <smallerThanExpected>False</smallerThanExpected>
             </tests>
-            <properties>
-                <primaryVolumeDescriptor>
-                    <typeCode>1</typeCode>
-                    <standardIdentifier>CD001</standardIdentifier>
-                    <version>1</version>
-                    <systemIdentifier>SYSTEMID</systemIdentifier>
-                    <volumeIdentifier>DISC</volumeIdentifier>
-                    <volumeSpaceSize>25309</volumeSpaceSize>
-                    <volumeSetSize>1</volumeSetSize>
-                    <volumeSequenceNumber>1</volumeSequenceNumber>
-                    <logicalBlockSize>2048</logicalBlockSize>
-                    <pathTableSize>218</pathTableSize>
-                    <typeLPathTableLocation>21936</typeLPathTableLocation>
-                    <optionalTypeLPathTableLocation>0</optionalTypeLPathTableLocation>
-                    <typeMPathTableLocation>21937</typeMPathTableLocation>
-                    <optionalTypeMPathTableLocation>0</optionalTypeMPathTableLocation>
-                    <volumeSetIdentifier>DISC</volumeSetIdentifier>
-                    <publisherIdentifier/>
-                    <dataPreparerIdentifier>STARBURN SDK</dataPreparerIdentifier>
-                    <applicationIdentifier/>
-                    <copyrightFileIdentifier/>
-                    <abstractFileIdentifier/>
-                    <bibliographicFileIdentifier/>
-                    <volumeCreationDateAndTime>1899/12/30, 00:00:00</volumeCreationDateAndTime>
-                    <volumeModificationDateAndTime>0/00/00, 00:00:00</volumeModificationDateAndTime>
-                    <volumeExpirationDateAndTime>0/00/00, 00:00:00</volumeExpirationDateAndTime>
-                    <volumeEffectiveDateAndTime>0/00/00, 00:00:00</volumeEffectiveDateAndTime>
-                    <fileStructureVersion>1</fileStructureVersion>
-                </primaryVolumeDescriptor>
-            </properties>
+            <fileSystems>
+                <fileSystem TYPE="ISO 9660">
+                    <primaryVolumeDescriptor>
+                        <typeCode>1</typeCode>
+                        <standardIdentifier>CD001</standardIdentifier>
+                          :: 
+                          ::
+                        <fileStructureVersion>1</fileStructureVersion>
+                    </primaryVolumeDescriptor>
+                </fileSystem>
+            </fileSystems>
         </image>
     </isolyzer>
 
--->
+### Example 5: UDF image
+
+    isolyzer udf.iso
+
+Output:
+
+    <?xml version="1.0" ?>
+    <isolyzer>
+        <toolInfo>
+            <toolName>isolyzer</toolName>
+            <toolVersion>1.0.0b3</toolVersion>
+        </toolInfo>
+        <image>
+            <fileInfo>
+                <fileName>udf.iso</fileName>
+                <filePath>/home/johan/isolyzer/testFiles/udf.iso</filePath>
+                <fileSizeInBytes>614400</fileSizeInBytes>
+                <fileLastModified>Fri Jun 30 18:31:33 2017</fileLastModified>
+            </fileInfo>
+            <statusInfo>
+                <success>True</success>
+            </statusInfo>
+            <tests>
+                <containsKnownFileSystem>True</containsKnownFileSystem>
+                <sizeExpected>579584</sizeExpected>
+                <sizeActual>614400</sizeActual>
+                <sizeDifference>34816</sizeDifference>
+                <sizeDifferenceSectors>17</sizeDifferenceSectors>
+                <sizeAsExpected>False</sizeAsExpected>
+                <smallerThanExpected>False</smallerThanExpected>
+            </tests>
+            <fileSystems>
+                <fileSystem TYPE="UDF">
+                    <logicalVolumeDescriptor>
+                        <tagIdentifier>6</tagIdentifier>
+                        <descriptorVersion>3</descriptorVersion>
+                        <tagSerialNumber>1</tagSerialNumber>
+                        <volumeSequenceNumber>2</volumeSequenceNumber>
+                        <logicalVolumeIdentifier>LinuxUDF</logicalVolumeIdentifier>
+                        <logicalBlockSize>2048</logicalBlockSize>
+                        <domainIdentifier>*OSTA UDF Compliant</domainIdentifier>
+                        <mapTableLength>6</mapTableLength>
+                        <numberOfPartitionMaps>1</numberOfPartitionMaps>
+                        <implementationIdentifier>*Linux UDFFS</implementationIdentifier>
+                        <integritySequenceExtentLength>2048</integritySequenceExtentLength>
+                        <integritySequenceExtentLocation>273</integritySequenceExtentLocation>
+                    </logicalVolumeDescriptor>
+                    <logicalVolumeIntegrityDescriptor>
+                        <tagIdentifier>9</tagIdentifier>
+                        <descriptorVersion>3</descriptorVersion>
+                        <tagSerialNumber>1</tagSerialNumber>
+                        <timeStamp>2017/06/30, 18:31:33</timeStamp>
+                        <integrityType>1</integrityType>
+                        <numberOfPartitions>1</numberOfPartitions>
+                        <lengthOfImplementationUse>46</lengthOfImplementationUse>
+                        <freeSpaceTable>4</freeSpaceTable>
+                        <sizeTable>9</sizeTable>
+                    </logicalVolumeIntegrityDescriptor>
+                    <partitionDescriptor>
+                        <tagIdentifier>5</tagIdentifier>
+                        <descriptorVersion>3</descriptorVersion>
+                        <tagSerialNumber>1</tagSerialNumber>
+                        <volumeDescriptorSequenceNumber>5</volumeDescriptorSequenceNumber>
+                        <partitionNumber>0</partitionNumber>
+                        <accessType>1</accessType>
+                        <partitionStartingLocation>274</partitionStartingLocation>
+                        <partitionLength>9</partitionLength>
+                    </partitionDescriptor>
+                </fileSystem>
+            </fileSystems>
+        </image>
+    </isolyzer>
+
+### Example 6: HFS+ image
+
+    isolyzer hfsplus.iso
+
+Output:
+
+    <?xml version="1.0" ?>
+    <isolyzer>
+        <toolInfo>
+            <toolName>isolyzer</toolName>
+            <toolVersion>1.0.0b3</toolVersion>
+        </toolInfo>
+        <image>
+            <fileInfo>
+                <fileName>hfsplus.iso</fileName>
+                <filePath>/home/johan/isolyzer/testFiles/hfsplus.iso</filePath>
+                <fileSizeInBytes>614400</fileSizeInBytes>
+                <fileLastModified>Fri Jun 30 18:31:33 2017</fileLastModified>
+            </fileInfo>
+            <statusInfo>
+                <success>True</success>
+            </statusInfo>
+            <tests>
+                <containsKnownFileSystem>True</containsKnownFileSystem>
+                <sizeExpected>614400</sizeExpected>
+                <sizeActual>614400</sizeActual>
+                <sizeDifference>0</sizeDifference>
+                <sizeDifferenceSectors>0</sizeDifferenceSectors>
+                <sizeAsExpected>True</sizeAsExpected>
+                <smallerThanExpected>False</smallerThanExpected>
+            </tests>
+            <fileSystems>
+                <fileSystem TYPE="HFS+">
+                    <hfsPlusVolumeheader>
+                        <signature>H+</signature>
+                        <version>4</version>
+                        <blockSize>2048</blockSize>
+                        <blockCount>300</blockCount>
+                    </hfsPlusVolumeheader>
+                </fileSystem>
+            </fileSystems>
+        </image>
+    </isolyzer>
+
+## Further resources
+
+The Isolyzer code is largely based on the following documentation and resources:
+
+* <http://wiki.osdev.org/ISO_9660> - explanation of the ISO 9660 filesystem
+ <https://github.com/libyal/libfshfs/blob/master/documentation/Hierarchical%20File%20System%20(HFS).asciidoc> - good explanation of HFS and HFS+ file systems
+* <https://opensource.apple.com/source/IOStorageFamily/IOStorageFamily-116/IOApplePartitionScheme.h> - Apple's code with Apple partitions and zero block definitions  
+* <https://en.wikipedia.org/wiki/Apple_Partition_Map#Layout> - overview of Apple partition map
+* <https://developer.apple.com/legacy/library/documentation/mac/Files/Files-102.html> - Apple documentation on Master Directory Block structure
+* <http://wiki.osdev.org/UDF> - overview of UDF
+* <https://www.ecma-international.org/publications/standards/Ecma-167.htm> - Volume and File Structure for Write-Once and Rewritable Media using Non-Sequential Recording for Information Interchange (general framework that forms basis of UDF)
+* <http://www.osta.org/specs/index.htm> - UDF specifications
+* <https://www.ecma-international.org/publications/files/ECMA-TR/ECMA%20TR-071.PDF> - UDF Bridge Format
+* <https://sites.google.com/site/udfintro/> - Wenguang's Introduction to Universal Disk Format (UDF)
+* <https://en.wikipedia.org/wiki/Hybrid_disc> - Wikipedia entry on hybrid discs
+
 
 ## License
 
