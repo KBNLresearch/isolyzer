@@ -578,6 +578,110 @@ Output:
         </image>
     </isolyzer>
 
+### Example 7: Hybrid ISO 9660 /UDF image
+
+    isolyzer hfsplus.iso
+
+Output:
+
+    <?xml version="1.0" ?>
+    <isolyzer>
+        <toolInfo>
+            <toolName>isolyzer</toolName>
+            <toolVersion>1.0.0b3</toolVersion>
+        </toolInfo>
+        <image>
+            <fileInfo>
+                <fileName>iso9660_udf.iso</fileName>
+                <filePath>/home/johan/isolyzer/testFiles/iso9660_udf.iso</filePath>
+                <fileSizeInBytes>942080</fileSizeInBytes>
+                <fileLastModified>Fri Jun 30 18:31:33 2017</fileLastModified>
+            </fileInfo>
+            <statusInfo>
+                <success>True</success>
+            </statusInfo>
+            <tests>
+                <containsKnownFileSystem>True</containsKnownFileSystem>
+                <sizeExpected>942080</sizeExpected>
+                <sizeActual>942080</sizeActual>
+                <sizeDifference>0</sizeDifference>
+                <sizeDifferenceSectors>0</sizeDifferenceSectors>
+                <sizeAsExpected>True</sizeAsExpected>
+                <smallerThanExpected>False</smallerThanExpected>
+            </tests>
+            <fileSystems>
+                <fileSystem TYPE="ISO 9660">
+                    <primaryVolumeDescriptor>
+                        <typeCode>1</typeCode>
+                        <standardIdentifier>CD001</standardIdentifier>
+                        <version>1</version>
+                        <systemIdentifier>LINUX</systemIdentifier>
+                        <volumeIdentifier>UDF Bridge demo</volumeIdentifier>
+                        <volumeSpaceSize>460</volumeSpaceSize>
+                        <volumeSetSize>1</volumeSetSize>
+                        <volumeSequenceNumber>1</volumeSequenceNumber>
+                        <logicalBlockSize>2048</logicalBlockSize>
+                        <pathTableSize>10</pathTableSize>
+                        <typeLPathTableLocation>263</typeLPathTableLocation>
+                        <optionalTypeLPathTableLocation>0</optionalTypeLPathTableLocation>
+                        <typeMPathTableLocation>265</typeMPathTableLocation>
+                        <optionalTypeMPathTableLocation>0</optionalTypeMPathTableLocation>
+                        <volumeSetIdentifier/>
+                        <publisherIdentifier/>
+                        <dataPreparerIdentifier/>
+                        <applicationIdentifier>MKISOFS ISO9660/HFS/UDF FILESYSTEM BUILDER &amp; CDRECORD CD/DVD/BluRay CREATOR (C) 1993 E.YOUNGDALE (C) 1997 J.PEARSON/J.SCHILLING</applicationIdentifier>
+                        <copyrightFileIdentifier/>
+                        <abstractFileIdentifier/>
+                        <bibliographicFileIdentifier/>
+                        <volumeCreationDateAndTime>2017/06/30, 18:31:33</volumeCreationDateAndTime>
+                        <volumeModificationDateAndTime>2017/06/30, 18:31:33</volumeModificationDateAndTime>
+                        <volumeExpirationDateAndTime>0/00/00, 00:00:00</volumeExpirationDateAndTime>
+                        <volumeEffectiveDateAndTime>2017/06/30, 18:31:33</volumeEffectiveDateAndTime>
+                        <fileStructureVersion>1</fileStructureVersion>
+                    </primaryVolumeDescriptor>
+                </fileSystem>
+                <fileSystem TYPE="UDF">
+                    <partitionDescriptor>
+                        <tagIdentifier>5</tagIdentifier>
+                        <descriptorVersion>2</descriptorVersion>
+                        <tagSerialNumber>0</tagSerialNumber>
+                        <volumeDescriptorSequenceNumber>2</volumeDescriptorSequenceNumber>
+                        <partitionNumber>0</partitionNumber>
+                        <accessType>1</accessType>
+                        <partitionStartingLocation>257</partitionStartingLocation>
+                        <partitionLength>53</partitionLength>
+                    </partitionDescriptor>
+                    <logicalVolumeDescriptor>
+                        <tagIdentifier>6</tagIdentifier>
+                        <descriptorVersion>2</descriptorVersion>
+                        <tagSerialNumber>0</tagSerialNumber>
+                        <volumeSequenceNumber>3</volumeSequenceNumber>
+                        <logicalVolumeIdentifier>UDF Bridge demo</logicalVolumeIdentifier>
+                        <logicalBlockSize>2048</logicalBlockSize>
+                        <domainIdentifier>*OSTA UDF Compliant</domainIdentifier>
+                        <mapTableLength>6</mapTableLength>
+                        <numberOfPartitionMaps>1</numberOfPartitionMaps>
+                        <implementationIdentifier>*mkisofs</implementationIdentifier>
+                        <integritySequenceExtentLength>4096</integritySequenceExtentLength>
+                        <integritySequenceExtentLocation>64</integritySequenceExtentLocation>
+                    </logicalVolumeDescriptor>
+                    <logicalVolumeIntegrityDescriptor>
+                        <tagIdentifier>9</tagIdentifier>
+                        <descriptorVersion>2</descriptorVersion>
+                        <tagSerialNumber>0</tagSerialNumber>
+                        <timeStamp>2017/06/30, 18:31:33</timeStamp>
+                        <integrityType>1</integrityType>
+                        <numberOfPartitions>1</numberOfPartitions>
+                        <lengthOfImplementationUse>46</lengthOfImplementationUse>
+                        <freeSpaceTable>0</freeSpaceTable>
+                        <sizeTable>53</sizeTable>
+                    </logicalVolumeIntegrityDescriptor>
+                </fileSystem>
+            </fileSystems>
+        </image>
+    </isolyzer>
+
+
 ## Further resources
 
 The Isolyzer code is largely based on the following documentation and resources:
