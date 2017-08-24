@@ -48,4 +48,3 @@ setup(name='isolyzer',
           'Programming Language :: Python :: 3',
       ]
      )
-

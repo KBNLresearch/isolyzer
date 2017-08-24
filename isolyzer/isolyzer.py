@@ -1,9 +1,8 @@
 #! /usr/bin/env python
+"""Verify if size of CD / DVD ISO image is consistent with the information in
+its filesystem-level headers.
+"""
 # 
-# Verify if size of CD / DVD ISO image matches information in
-# ISO 9660 Volume Descriptors (no support for UDF file systems yet)
-# 
-#
 # Copyright (C) 2015 -2017, Johan van der Knijff, Koninklijke Bibliotheek -
 #  National Library of the Netherlands
 #
@@ -40,7 +39,7 @@ from . import shared as shared
 
 scriptPath, scriptName = os.path.split(sys.argv[0])
 
-# scriptName is empty when called from Java/Jython, so this needs a fix
+# Fix empty scriptName if isolyzer is called from Java/Jython
 if len(scriptName) == 0:
     scriptName = 'isolyzer'
 
@@ -49,34 +48,29 @@ __version__ = '1.0.0b4'
 # Create parser
 parser = argparse.ArgumentParser(
     description="Verify file size of ISO image and extract technical information")
-
-def main_is_frozen():
-    return (hasattr(sys, "frozen") or # new py2exe
-        hasattr(sys, "importers") # old py2exe
-        or imp.is_frozen("__main__")) # tools/freeze
-
-def get_main_dir():
-    if main_is_frozen():
-        return os.path.dirname(sys.executable)
-    return os.path.dirname(sys.argv[0])
     
 def printWarning(msg):
+    """Print warning to stderr"""
     msgString=("User warning: " + msg +"\n")
     sys.stderr.write(msgString)
 
+
 def errorExit(msg):
+    """Print warning to stderr and exit"""
     msgString=("Error: " + msg + "\n")
     sys.stderr.write(msgString)
     sys.exit()
 
+
 def checkFileExists(fileIn):
-    # Check if file exists and exit if not
+    """Check if file exists and exit if not"""
     if os.path.isfile(fileIn)==False:
         msg=fileIn + " does not exist"
         errorExit(msg)
+
     
 def readFileBytes(file,byteStart,noBytes):
-    # Read file, return contents as a byte object
+    """Read file, return contents as a byte object"""
 
     # Open file
     f = open(file,"rb")
@@ -88,16 +82,18 @@ def readFileBytes(file,byteStart,noBytes):
     fileData=f.read(noBytes)
     f.close()
 
-    return(fileData)
+    return fileData
+
 
 def makeHumanReadable(element, remapTable={}):
-    # Takes element object, and returns a modified version in which all
-    # non-printable 'text' fields (which may contain numeric data or binary strings)
-    # are replaced by printable strings
-    #
-    # Property values in original tree may be mapped to alternative (more user-friendly)
-    # reportable values using a remapTable, which is a nested dictionary.
-    # TODO: add to separate module
+    """Takes element object, and returns a modified version in which all
+    non-printable 'text' fields (which may contain numeric data or binary strings)
+    are replaced by printable strings
+
+    Property values in original tree may be mapped to alternative (more user-friendly)
+    reportable values using a remapTable, which is a nested dictionary.
+    TODO: add to separate module
+    """
 
     for elt in element.iter():
         # Text field of this element
@@ -153,8 +149,9 @@ def makeHumanReadable(element, remapTable={}):
             # Update output tree
             elt.text = textOut
 
+
 def writeElement(elt, codec):
-    # Writes element as XML to stdout using defined codec
+    """Writes element as XML to stdout using defined codec"""
 
     # Element to string
     if sys.version.startswith("2"):
@@ -165,39 +162,31 @@ def writeElement(elt, codec):
     # Make xml pretty
     xmlPretty = minidom.parseString(xmlOut).toprettyxml('    ')
  
-    """
-    # Steps to get rid of xml declaration:
-    # String to list
-    xmlAsList = xmlPretty.split("\n")
-    # Remove first item (xml declaration)
-    del xmlAsList[0]
-    # Convert back to string
-    xmlOut = "\n".join(xmlAsList)
-    """
     xmlOut = xmlPretty
        
     # Write output
     codec.write(xmlOut)
-    
+
+
 def stripSurrogatePairs(ustring):
 
-    # Removes surrogate pairs from a Unicode string
+    """Removes surrogate pairs from a Unicode string"""
 
     # This works for Python 3.x, but not for 2.x!
     # Source: http://stackoverflow.com/q/19649463/1209004
 
-    if sys.version.startswith("3"):
+    if sys.version.startswith('3'):
         try:
             ustring.encode('utf-8')
         except UnicodeEncodeError:
             # Strip away surrogate pairs
-            tmp = ustring.encode('utf-8', 'surrogateescape')
+            tmp = ustring.encode('utf-8', 'replace')
             ustring = tmp.decode('utf-8', 'ignore')
 
     # In Python 2.x we need to use regex
     # Source: http://stackoverflow.com/a/18674109/1209004
 
-    if sys.version.startswith("2"):
+    if sys.version.startswith('2'):
         # Generate regex for surrogate pair detection
 
         lone = re.compile(
@@ -212,15 +201,16 @@ def stripSurrogatePairs(ustring):
             [\udc00-\udfff]      #   match trailing surrogate
             )                   # end group
             """))
-   
-        # Remove surrogates (i.e. replace by empty string) 
-        tmp = lone.sub(r'',ustring).encode('utf-8')
+
+        # Remove surrogates (i.e. replace by empty string)
+        tmp = lone.sub(r'', ustring).encode('utf-8')
         ustring = tmp.decode('utf-8')
 
-    return(ustring)
+    return ustring
      
 
 def parseCommandLine():
+    """Parse command line"""
     # Add arguments
     parser.add_argument('ISOImages', 
         action = "store", 
@@ -241,7 +231,9 @@ def parseCommandLine():
 
     return(args)
 
+
 def processImage(image, offset):
+    """Process one image"""
 
     # Does image exist?
     checkFileExists(image)
@@ -663,9 +655,11 @@ def processImage(image, offset):
     imageRoot.append(tests)
     imageRoot.append(fileSystems)
     
-    return(imageRoot)
+    return imageRoot
+
 
 def main():
+    """Main command line application"""
 
     global out
     global err
