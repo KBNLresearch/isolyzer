@@ -17,6 +17,7 @@ import struct
 import binascii
 import unicodedata
 
+
 # Convert byte object of bOrder byteorder to format using formatCharacter
 # Return -9999 if unpack raised an error
 

@@ -3,14 +3,9 @@
 # Parser functions for Apple file systems
 
 import xml.etree.ElementTree as ET
+from . import byteconv as bc
+from . import shared as shared
 
-if __package__ == "isolyzer":
-    # Use relative imports if run from package
-    from . import byteconv as bc
-    from . import shared as shared
-else:
-    import byteconv as bc
-    import shared as shared
 
 def parseZeroBlock(bytesData):
 
