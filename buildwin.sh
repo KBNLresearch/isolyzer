@@ -10,7 +10,7 @@ downloadURL64bit=https://sourceforge.net/projects/winpython/files/WinPython_2.7/
 downloadURL32bit=https://sourceforge.net/projects/winpython/files/WinPython_2.7/2.7.13.1/WinPython-32bit-2.7.13.1Zero.exe/download
 
 # PyInstaller spec files that defines build options
-specFile64bit=jwin64.spec
+specFile64bit=win64.spec
 specFile32bit=win32.spec
 
 # Script base name (i.e. script name minus .py extension)
@@ -71,8 +71,8 @@ buildBinaries(){
     # Executes jpylyzer with -v option and stores output to 
     # env variable 'version'
     # Also trim trailing EOL character and replace '.' by '_' 
-    WINEDEBUG=$WineDebug wine $pythonWine $workDir"/$scriptBaseName/$scriptBaseName.py" -v 2> temp.txt
-    version=$(head -n 1 temp.txt | tr -d '\r' |tr '.' '_' )
+    WINEDEBUG=$WineDebug wine $pythonWine -m $scriptBaseName -v 2> temp.txt
+    version=$(head -n 1 temp.txt | tr -d '\r')
     rm temp.txt
 
     echo "Building binaries"

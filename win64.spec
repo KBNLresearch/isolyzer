@@ -1,5 +1,5 @@
 # -*- mode: python -*-
-a = Analysis(['.\isolyzer\isolyzer.py'],
+a = Analysis(['.\cli.py'],
              pathex=['.\isolyzer'],
              hiddenimports=[],
              hookspath=None)
