@@ -47,6 +47,7 @@ __version__ = '1.0.0b4'
 parser = argparse.ArgumentParser(
     description="Verify file size of ISO image and extract technical information")
 
+
 def printWarning(msg):
     """Print warning to stderr"""
     msgString = ("User warning: " + msg + "\n")
@@ -131,7 +132,7 @@ def makeHumanReadable(element, remapTable={}):
 
         # Convert
 
-        if remappedValue != None:
+        if remappedValue is not None:
             # Data type
             textType = type(remappedValue)
 
@@ -317,12 +318,12 @@ def processImage(image, offset):
             fileSystemApple = "HFS+"
 
         # Create element to store properties of Apple filesystems
-        if containsApplePartitionMap or containsAppleMasterDirectoryBlock or \
-        containsHFSPlusVolumeHeader:
+        if (containsApplePartitionMap or containsAppleMasterDirectoryBlock or
+                containsHFSPlusVolumeHeader):
             containsAppleFS = True
             fsApple = ET.Element("fileSystem")
 
-        if containsApplePartitionMap == True:
+        if containsApplePartitionMap:
 
             # Based on description at: https://en.wikipedia.org/wiki/Apple_Partition_Map#Layout and
             # https://opensource.apple.com/source/IOStorageFamily/IOStorageFamily-116/IOApplePartitionScheme.h
@@ -336,7 +337,7 @@ def processImage(image, offset):
             except Exception:
                 parsedAppleZeroBlock = False
 
-            #shared.addProperty(tests, "parsedAppleZeroBlock", str(parsedAppleZeroBlock))
+            # shared.addProperty(tests, "parsedAppleZeroBlock", str(parsedAppleZeroBlock))
 
             # Set up list to store all values of 'partionType' in partition map
             partitionTypes = []
@@ -352,7 +353,7 @@ def processImage(image, offset):
             except Exception:
                 parsedApplePartitionMap = False
 
-            #shared.addProperty(tests, "parsedApplePartitionMap", str(parsedApplePartitionMap))
+            # shared.addProperty(tests, "parsedApplePartitionMap", str(parsedApplePartitionMap))
 
             # Iterate over remaining partition map entries
             pOffset = 1024
@@ -397,11 +398,11 @@ def processImage(image, offset):
             except Exception:
                 parsedHFSPlusVolumeHeader = False
 
-            #shared.addProperty(tests, "parsedHFSPlusVolumeHeader", str(parsedHFSPlusVolumeHeader))
+            # shared.addProperty(tests, "parsedHFSPlusVolumeHeader", str(parsedHFSPlusVolumeHeader))
 
         if containsAppleMasterDirectoryBlock:
 
-            masterDirectoryBlockData = isoBytes[1024:1536] # Size of MDB?
+            masterDirectoryBlockData = isoBytes[1024:1536]  # Size of MDB?
             try:
                 masterDirectoryBlockInfo = apple.parseMasterDirectoryBlock(masterDirectoryBlockData)
                 fsApple.append(masterDirectoryBlockInfo)
@@ -409,8 +410,8 @@ def processImage(image, offset):
             except Exception:
                 parsedMasterDirectoryBlock = False
 
-            #shared.addProperty(tests, "parsedMasterDirectoryBlock",\
-            #str(parsedMasterDirectoryBlock))
+            # shared.addProperty(tests, "parsedMasterDirectoryBlock",\
+            # str(parsedMasterDirectoryBlock))
 
         # This is a dummy value
         volumeDescriptorType = -1
@@ -446,10 +447,10 @@ def processImage(image, offset):
                         parsedPrimaryVolumeDescriptor = True
                     except Exception:
                         parsedPrimaryVolumeDescriptor = False
-                        #raise
+                        # raise
 
-                    #shared.addProperty(tests, "parsedPrimaryVolumeDescriptor", \
-                    #str(parsedPrimaryVolumeDescriptor))
+                    # shared.addProperty(tests, "parsedPrimaryVolumeDescriptor", \
+                    # str(parsedPrimaryVolumeDescriptor))
                 byteStart = byteEnd
 
         # Read through extended (UDF) volume descriptors (if present)
@@ -493,8 +494,8 @@ def processImage(image, offset):
             # Read through main Volume Descriptor Sequence
             while tagIdentifier != 8 and tagIdentifier != -9999:
                 tagIdentifier, volumeDescriptorData, byteEnd = \
-                udf.getVolumeDescriptor(isoBytes, byteStart)
-                #sys.stderr.write(str(tagIdentifier) + "\n")
+                    udf.getVolumeDescriptor(isoBytes, byteStart)
+                # sys.stderr.write(str(tagIdentifier) + "\n")
 
                 if tagIdentifier == 6:
 
@@ -507,30 +508,30 @@ def processImage(image, offset):
 
                         # Start sector and length of integrity sequence
                         integritySequenceExtentLocation = \
-                        lvdInfo.find("integritySequenceExtentLocation").text
+                            lvdInfo.find("integritySequenceExtentLocation").text
                         integritySequenceExtentLength = \
-                        lvdInfo.find("integritySequenceExtentLength").text
+                            lvdInfo.find("integritySequenceExtentLength").text
 
                         try:
                             # Read Logical Volume Integrity Descriptor
                             lvidTagIdentifier, lvidVolumeDescriptorData, lVIDbyteEnd = \
-                            udf.getVolumeDescriptor(isoBytes,
-                                                    2048* integritySequenceExtentLocation)
+                                udf.getVolumeDescriptor(isoBytes,
+                                                        2048 * integritySequenceExtentLocation)
                             lvidInfo = udf.parseLogicalVolumeIntegrityDescriptor(lvidVolumeDescriptorData)
                             fsUDF.append(lvidInfo)
                             parsedUDFLogicalVolumeIntegrityDescriptor = True
                         except Exception:
                             parsedUDFLogicalVolumeIntegrityDescriptor = False
-                            #raise
+                            # raise
 
                     except Exception:
                         parsedUDFLogicalVolumeDescriptor = False
-                        #raise
+                        # raise
 
-                    #shared.addProperty(tests, "parsedUDFLogicalVolumeDescriptor", \
-                    #str(parsedUDFLogicalVolumeDescriptor))
-                    #shared.addProperty(tests, "parsedUDFLogicalVolumeIntegrityDescriptor", \
-                    #str(parsedUDFLogicalVolumeIntegrityDescriptor))
+                    # shared.addProperty(tests, "parsedUDFLogicalVolumeDescriptor", \
+                    # str(parsedUDFLogicalVolumeDescriptor))
+                    # shared.addProperty(tests, "parsedUDFLogicalVolumeIntegrityDescriptor", \
+                    # str(parsedUDFLogicalVolumeIntegrityDescriptor))
 
                 if tagIdentifier == 5:
 
@@ -543,10 +544,10 @@ def processImage(image, offset):
 
                     except Exception:
                         parsedUDFPartitionDescriptor = False
-                        #raise
+                        # raise
 
-                    #shared.addProperty(tests, "parsedUDFPartitionDescriptor",
-                    #str(parsedUDFPartitionDescriptor))
+                    # shared.addProperty(tests, "parsedUDFPartitionDescriptor",
+                    # str(parsedUDFPartitionDescriptor))
 
                 noUDFVolumeDescriptors += 1
                 byteStart = byteEnd
@@ -588,7 +589,7 @@ def processImage(image, offset):
             # Subtracting offset from volumeSpaceSize gives the correct size in case of image
             # from 2nd session of multisession disc
             sizeExpectedPVD = (pvdInfo.find('volumeSpaceSize').text - offset) * \
-            pvdInfo.find('logicalBlockSize').text
+                pvdInfo.find('logicalBlockSize').text
             # NOTE: this might be off if logicalBlockSize != 2048 (since Sys area and
             # Volume Descriptors are ALWAYS multiples of 2048 bytes!). Also, even for
             # non-hybrid FS actual size is sometimes slightly larger than expected size.
@@ -597,20 +598,20 @@ def processImage(image, offset):
         if containsApplePartitionMap and parsedAppleZeroBlock:
             # Calculate from zero block in Apple partition
             sizeExpectedZeroBlock = appleZeroBlockInfo.find('blockCount').text * \
-            appleZeroBlockInfo.find('blockSize').text
+                appleZeroBlockInfo.find('blockSize').text
 
         if containsAppleMasterDirectoryBlock and parsedMasterDirectoryBlock:
             # Calculate from Apple Master Directory Block
             sizeExpectedMDB = masterDirectoryBlockInfo.find('blockCount').text * \
-            masterDirectoryBlockInfo.find('blockSize').text
+                masterDirectoryBlockInfo.find('blockSize').text
 
         if containsHFSPlusVolumeHeader and parsedHFSPlusVolumeHeader:
             # Calculate from HFS Plus volume Header
             sizeExpectedHFSPlus = hfsPlusHeaderInfo.find('blockCount').text * \
-            hfsPlusHeaderInfo.find('blockSize').text
+                hfsPlusHeaderInfo.find('blockSize').text
 
         if containsUDF and parsedUDFLogicalVolumeDescriptor and \
-        parsedUDFLogicalVolumeIntegrityDescriptor:
+                parsedUDFLogicalVolumeIntegrityDescriptor:
             # For UDF estimating the expected file size is not straightforward, because the fields
             # in the Partition Descriptor and the Integrity Descriptor exclude the size occupied
             # by descriptors before and after the partition. The number of sectors *before*
@@ -621,9 +622,10 @@ def processImage(image, offset):
             # number of sectors =  partitionLength + partitionStartingLocation
             #
             # In reality this estimate may be too low because of additional descriptors after
-            #the partition.
-            sizeExpectedUDF = (pdInfo.find('partitionLength').text + \
-            pdInfo.find('partitionStartingLocation').text) * lvdInfo.find('logicalBlockSize').text
+            # the partition.
+            sizeExpectedUDF = (pdInfo.find('partitionLength').text +
+                               pdInfo.find('partitionStartingLocation').text) * \
+                               lvdInfo.find('logicalBlockSize').text
 
         # Assuming here that best estimate is largest out of the above values
         sizeExpected = max([sizeExpectedPVD,
@@ -670,10 +672,10 @@ def processImage(image, offset):
             failureMessage = "runtime error (please report to developers)"
         else:
             failureMessage = "unknown error (please report to developers)"
-            #raise
+            # raise
         printWarning(failureMessage)
 
-     # Add success outcome to status info
+    # Add success outcome to status info
     shared.addProperty(statusInfo, "success", str(success))
     if not success:
         shared.addProperty(statusInfo, "failureMessage", failureMessage)
