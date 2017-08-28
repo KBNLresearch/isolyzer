@@ -21,15 +21,13 @@ its filesystem-level headers.
 import sys
 import os
 import time
-import imp
 import glob
-import struct
 import re
 import codecs
 import argparse
-from six import u
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
+from six import u
 from . import iso9660 as iso
 from . import udf as udf
 from . import apple as apple
@@ -64,7 +62,7 @@ def errorExit(msg):
 
 def checkFileExists(fileIn):
     """Check if file exists and exit if not"""
-    if os.path.isfile(fileIn) == False:
+    if not os.path.isfile(fileIn):
         msg = fileIn + " does not exist"
         errorExit(msg)
 
@@ -335,7 +333,7 @@ def processImage(image, offset):
                 appleZeroBlockInfo = apple.parseZeroBlock(appleZeroBlockData)
                 fsApple.append(appleZeroBlockInfo)
                 parsedAppleZeroBlock = True
-            except:
+            except Exception:
                 parsedAppleZeroBlock = False
 
             #shared.addProperty(tests, "parsedAppleZeroBlock", str(parsedAppleZeroBlock))
@@ -351,7 +349,7 @@ def processImage(image, offset):
                 partitionTypes.append(applePartitionMapInfo.find('partitionType').text)
                 fsApple.append(applePartitionMapInfo)
                 parsedApplePartitionMap = True
-            except:
+            except Exception:
                 parsedApplePartitionMap = False
 
             #shared.addProperty(tests, "parsedApplePartitionMap", str(parsedApplePartitionMap))
@@ -366,7 +364,7 @@ def processImage(image, offset):
                     partitionTypes.append(applePartitionMapInfo.find('partitionType').text)
                     fsApple.append(applePartitionMapInfo)
                     parsedApplePartitionMap = True
-                except:
+                except Exception:
                     parsedApplePartitionMap = False
 
                 pOffset += 512
@@ -389,26 +387,26 @@ def processImage(image, offset):
                 # Unknown file system
                 fileSystemApple = "Unknown"
 
-        if containsHFSPlusVolumeHeader == True:
+        if containsHFSPlusVolumeHeader:
 
             hfsPlusHeaderData = isoBytes[1024:1536]
             try:
                 hfsPlusHeaderInfo = apple.parseHFSPlusVolumeHeader(hfsPlusHeaderData)
                 fsApple.append(hfsPlusHeaderInfo)
                 parsedHFSPlusVolumeHeader = True
-            except:
+            except Exception:
                 parsedHFSPlusVolumeHeader = False
 
             #shared.addProperty(tests, "parsedHFSPlusVolumeHeader", str(parsedHFSPlusVolumeHeader))
 
-        if containsAppleMasterDirectoryBlock == True:
+        if containsAppleMasterDirectoryBlock:
 
             masterDirectoryBlockData = isoBytes[1024:1536] # Size of MDB?
             try:
                 masterDirectoryBlockInfo = apple.parseMasterDirectoryBlock(masterDirectoryBlockData)
                 fsApple.append(masterDirectoryBlockInfo)
                 parsedMasterDirectoryBlock = True
-            except:
+            except Exception:
                 parsedMasterDirectoryBlock = False
 
             #shared.addProperty(tests, "parsedMasterDirectoryBlock",\
@@ -426,7 +424,7 @@ def processImage(image, offset):
         # Skip to byte 32768, which is where actual ISO 9660 fields start
         byteStart = 32768
 
-        if containsISO9660Signature == True:
+        if containsISO9660Signature:
 
             # Create element to store properties of ISO9660 filesystem
             fsISO = ET.Element("fileSystem")
@@ -446,7 +444,7 @@ def processImage(image, offset):
                         pvdInfo = iso.parsePrimaryVolumeDescriptor(volumeDescriptorData)
                         fsISO.append(pvdInfo)
                         parsedPrimaryVolumeDescriptor = True
-                    except:
+                    except Exception:
                         parsedPrimaryVolumeDescriptor = False
                         #raise
 
@@ -469,7 +467,7 @@ def processImage(image, offset):
 
         containsUDF = noExtendedVolumeDescriptors > 0
 
-        if containsUDF == True:
+        if containsUDF:
 
             # Create element to store properties of UDF filesystem
             fsUDF = ET.Element("fileSystem")
@@ -521,11 +519,11 @@ def processImage(image, offset):
                             lvidInfo = udf.parseLogicalVolumeIntegrityDescriptor(lvidVolumeDescriptorData)
                             fsUDF.append(lvidInfo)
                             parsedUDFLogicalVolumeIntegrityDescriptor = True
-                        except:
+                        except Exception:
                             parsedUDFLogicalVolumeIntegrityDescriptor = False
                             #raise
 
-                    except:
+                    except Exception:
                         parsedUDFLogicalVolumeDescriptor = False
                         #raise
 
@@ -543,7 +541,7 @@ def processImage(image, offset):
                         fsUDF.append(pdInfo)
                         parsedUDFPartitionDescriptor = True
 
-                    except:
+                    except Exception:
                         parsedUDFPartitionDescriptor = False
                         #raise
 
@@ -554,13 +552,13 @@ def processImage(image, offset):
                 byteStart = byteEnd
 
         # Append all fs-specific output to fileSystems element
-        if containsISO9660Signature == True:
+        if containsISO9660Signature:
             fsISO.attrib["TYPE"] = "ISO 9660"
             fileSystems.append(fsISO)
-        if containsAppleFS == True:
+        if containsAppleFS:
             fsApple.attrib["TYPE"] = fileSystemApple
             fileSystems.append(fsApple)
-        if containsUDF == True:
+        if containsUDF:
             fsUDF.attrib["TYPE"] = "UDF"
             fileSystems.append(fsUDF)
 
@@ -585,7 +583,7 @@ def processImage(image, offset):
         # Initialise flag
         calculatedSizeExpected = False
 
-        if parsedPrimaryVolumeDescriptor == True:
+        if parsedPrimaryVolumeDescriptor:
             # Calculate from Primary Volume Descriptor
             # Subtracting offset from volumeSpaceSize gives the correct size in case of image
             # from 2nd session of multisession disc
@@ -596,23 +594,23 @@ def processImage(image, offset):
             # non-hybrid FS actual size is sometimes slightly larger than expected size.
             # Not entirely sure why (padding bytes?)
 
-        if containsApplePartitionMap == True and parsedAppleZeroBlock == True:
+        if containsApplePartitionMap and parsedAppleZeroBlock:
             # Calculate from zero block in Apple partition
             sizeExpectedZeroBlock = appleZeroBlockInfo.find('blockCount').text * \
             appleZeroBlockInfo.find('blockSize').text
 
-        if containsAppleMasterDirectoryBlock == True and parsedMasterDirectoryBlock == True:
+        if containsAppleMasterDirectoryBlock and parsedMasterDirectoryBlock:
             # Calculate from Apple Master Directory Block
             sizeExpectedMDB = masterDirectoryBlockInfo.find('blockCount').text * \
             masterDirectoryBlockInfo.find('blockSize').text
 
-        if containsHFSPlusVolumeHeader == True and parsedHFSPlusVolumeHeader == True:
+        if containsHFSPlusVolumeHeader and parsedHFSPlusVolumeHeader:
             # Calculate from HFS Plus volume Header
             sizeExpectedHFSPlus = hfsPlusHeaderInfo.find('blockCount').text * \
             hfsPlusHeaderInfo.find('blockSize').text
 
-        if containsUDF == True and parsedUDFLogicalVolumeDescriptor == True and \
-        parsedUDFLogicalVolumeIntegrityDescriptor == True:
+        if containsUDF and parsedUDFLogicalVolumeDescriptor and \
+        parsedUDFLogicalVolumeIntegrityDescriptor:
             # For UDF estimating the expected file size is not straightforward, because the fields
             # in the Partition Descriptor and the Integrity Descriptor exclude the size occupied
             # by descriptors before and after the partition. The number of sectors *before*
@@ -640,7 +638,6 @@ def processImage(image, offset):
         # Size difference, expressed in 2048-byte sectors
         diffSizeSectors = diffSize / 2048
 
-        imageLargerThanExpected = False
         imageSmallerThanExpected = False
 
         # If sizeExpected is 0 something is seriously wrong, shouldn't be flagged as expected
@@ -649,7 +646,6 @@ def processImage(image, offset):
         elif diffSize > 0:
             # Image larger than expected, probably OK
             imageHasExpectedSize = False
-            imageLargerThanExpected = True
         else:
             # Image smaller than expected size, probably indicates a problem
             imageHasExpectedSize = False
@@ -679,7 +675,7 @@ def processImage(image, offset):
 
      # Add success outcome to status info
     shared.addProperty(statusInfo, "success", str(success))
-    if success == False:
+    if not success:
         shared.addProperty(statusInfo, "failureMessage", failureMessage)
 
     imageRoot.append(fileInfo)
