@@ -1,5 +1,4 @@
 #! /usr/bin/env python
-#
 """Parser functions for ISO 9660 file systems"""
 
 import xml.etree.ElementTree as ET
