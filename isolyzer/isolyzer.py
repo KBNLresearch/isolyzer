@@ -42,7 +42,7 @@ scriptPath, scriptName = os.path.split(sys.argv[0])
 if len(scriptName) == 0:
     scriptName = 'isolyzer'
 
-__version__ = '1.0.0b5'
+__version__ = '1.0.0'
 
 # Create parser
 parser = argparse.ArgumentParser(
