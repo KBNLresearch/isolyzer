@@ -178,7 +178,8 @@ The *image* element holds information about an analysed image. It contains the f
 
 * *fileInfo*: contains general information about the analysed file
 * *statusInfo*: contains information about about the status of Isolyzer's attempt at processing the file
-* *tests*: contains outcomes of the tests that are performed by Isolyzer 
+* *sectorOffset*: contains the value of `--offset` as specified by the user (offset in sectors)
+* *tests*: contains outcomes of the tests that are performed by Isolyzer
 * *fileSystems*: contains technical metadata that are extracted from the filesystem-level headers.
 
 ## fileInfo element
@@ -260,7 +261,7 @@ Below are some examples of Isolyzer's output for different kinds of images. Note
 ### Example 1: ISO 9660 image has expected size 
 
     isolyzer iso9660.iso
-    
+
 Output:
 
     <?xml version="1.0" ?>
@@ -279,6 +280,7 @@ Output:
             <statusInfo>
                 <success>True</success>
             </statusInfo>
+            <sectorOffset>0</sectorOffset>
             <tests>
                 <containsKnownFileSystem>True</containsKnownFileSystem>
                 <sizeExpected>442368</sizeExpected>
@@ -345,6 +347,7 @@ Output:
             <statusInfo>
                 <success>True</success>
             </statusInfo>
+            <sectorOffset>0</sectorOffset>
             <tests>
                 <containsKnownFileSystem>True</containsKnownFileSystem>
                 <sizeExpected>442368</sizeExpected>
@@ -391,6 +394,7 @@ Output:
             <statusInfo>
                 <success>True</success>
             </statusInfo>
+            <sectorOffset>0</sectorOffset>
             <tests>
                 <containsKnownFileSystem>False</containsKnownFileSystem>
                 <sizeExpected>0</sizeExpected>
@@ -438,6 +442,7 @@ Output:
             <statusInfo>
                 <success>True</success>
             </statusInfo>
+            <sectorOffset>21917</sectorOffset>
             <tests>
                 <containsKnownFileSystem>True</containsKnownFileSystem>
                 <sizeExpected>6946816</sizeExpected>
@@ -483,6 +488,7 @@ Output:
             <statusInfo>
                 <success>True</success>
             </statusInfo>
+            <sectorOffset>0</sectorOffset>
             <tests>
                 <containsKnownFileSystem>True</containsKnownFileSystem>
                 <sizeExpected>579584</sizeExpected>
@@ -556,6 +562,7 @@ Output:
             <statusInfo>
                 <success>True</success>
             </statusInfo>
+            <sectorOffset>0</sectorOffset>
             <tests>
                 <containsKnownFileSystem>True</containsKnownFileSystem>
                 <sizeExpected>614400</sizeExpected>
@@ -600,6 +607,7 @@ Output:
             <statusInfo>
                 <success>True</success>
             </statusInfo>
+            <sectorOffset>0</sectorOffset>
             <tests>
                 <containsKnownFileSystem>True</containsKnownFileSystem>
                 <sizeExpected>942080</sizeExpected>

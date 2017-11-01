@@ -42,7 +42,7 @@ scriptPath, scriptName = os.path.split(sys.argv[0])
 if len(scriptName) == 0:
     scriptName = 'isolyzer'
 
-__version__ = '1.0.0'
+__version__ = '1.1.0'
 
 # Create parser
 parser = argparse.ArgumentParser(
@@ -683,6 +683,8 @@ def processImage(image, offset):
 
     imageRoot.append(fileInfo)
     imageRoot.append(statusInfo)
+    # Add offset value
+    shared.addProperty(imageRoot, "sectorOffset", str(offset))
     imageRoot.append(tests)
     imageRoot.append(fileSystems)
 
