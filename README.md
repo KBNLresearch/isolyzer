@@ -25,7 +25,7 @@ Before installing, you need to decide whether you want to install Isolyzer for a
 Enter the following command:
 
     pip install isolyzer --user
-   
+
 This will install the software to the `.local` folder (hidden by default!) in your home directory (`~/.local`). Next try to run Isolyzer by entering:
 
     isolyzer
@@ -44,7 +44,7 @@ If this happens, you will need to add the directory `~/.local/bin` (which is whe
 Save the file, log out of your session and then log in again. Open a command terminal and type:
 
      isolyzer
-     
+
 If all went well you now see this:
 
     usage: isolyzer [-h] [--version] ISOImage
@@ -71,32 +71,32 @@ The above command lines will only install stable versions of isolyzer. In order 
 
 ## Installation from stand-alone binaries (Windows)
 
-Go to the *release* page of Isolyzer's Github repo: 
+Go to the *release* page of Isolyzer's Github repo:
 
 <https://github.com/KBNLresearch/isolyzer/releases>
 
 Then download the file 'isolyzer_x_y_z_win32.zip' from the most recent release. Unzip the file to whatever location on your machine you like. You'll now be able to run Isolyzer from a command window by entering 'isolyzer', including its full path. For example, if you extracted the zip file isolyzer_0_2_0_win32.zip' to directory 'c:\test', you have to enter:
 
     c:\test\isolyzer_0_2_0_win32\isolyzer
-    
-## Upgrade Isolyzer to the latest version 
+
+## Upgrade Isolyzer to the latest version
 
 If you installed with pip, enter this for a single user installation:
 
     pip install isolyzer -U --user
 
 For a global installation:
-    
+
     sudo -H pip install isolyzer -U
 
 If you installed from the Windows binaries, repeat the instructions from the 'Installation from stand-alone binaries' section above (you may want to remove the old installation manually).
-    
+
 ## Command line use
 
 ### Usage
 
     isolyzer [-h] [--version] [--offset SECTOROFFSET] ISOImage
-    
+
 ### Positional arguments
 
 `ISOImage` : input ISO image
@@ -113,7 +113,7 @@ If you installed from the Windows binaries, repeat the instructions from the 'In
 
 ### ISO 9660
 
-For an ISO 9660 file system, Isolyzer locates and parses its [Primary Volume Descriptor](http://wiki.osdev.org/ISO_9660#The_Primary_Volume_Descriptor) (PVD). From the PVD it 2. From the PVD it then reads the *Volume Space Size* field (which denotes the number of sectors/blocks in the image) and the *Logical Block Size* field (the number of bytes for each block). The expected file size is then calculated as:
+For an ISO 9660 file system, Isolyzer locates and parses its [Primary Volume Descriptor](http://wiki.osdev.org/ISO_9660#The_Primary_Volume_Descriptor) (PVD). From the PVD it then reads the *Volume Space Size* field (which denotes the number of sectors/blocks in the image) and the *Logical Block Size* field (the number of bytes for each block). The expected file size is then calculated as:
 
 *SizeExpectedISO* =  (*Volume Space Size* - *Offset*) x *Logical Block Size*
 
@@ -371,11 +371,11 @@ Output:
         </image>
     </isolyzer>
 
-    
+
 ### Example 3: ISO truncated before Primary Volume Descriptor
 
     isolyzer iso9660_nopvd.iso
-    
+
 Output:
 
     <?xml version="1.0" ?>
@@ -413,12 +413,12 @@ Output:
 First use *cd-info* on the physical carrier to find out the start sector of the data session:
 
     cd-info
-    
+
 Then look for this bit:
 
-    CD-Plus/Extra   
+    CD-Plus/Extra
     session #2 starts at track  8, LSN: 21917, ISO 9660 blocks:  25309
-    ISO 9660: 25309 blocks, label `DISC 
+    ISO 9660: 25309 blocks, label `DISC
 
 So start sector of the data session is 21917. Then:
 
@@ -587,7 +587,7 @@ Output:
 
 ### Example 7: Hybrid ISO 9660 /UDF image
 
-    isolyzer hfsplus.iso
+    isolyzer iso9660_udf.iso
 
 Output:
 
@@ -695,8 +695,8 @@ Output:
 The Isolyzer code is largely based on the following documentation and resources:
 
 * <http://wiki.osdev.org/ISO_9660> - explanation of the ISO 9660 filesystem
- <https://github.com/libyal/libfshfs/blob/master/documentation/Hierarchical%20File%20System%20(HFS).asciidoc> - good explanation of HFS and HFS+ file systems
-* <https://opensource.apple.com/source/IOStorageFamily/IOStorageFamily-116/IOApplePartitionScheme.h> - Apple's code with Apple partitions and zero block definitions  
+* <https://github.com/libyal/libfshfs/blob/master/documentation/Hierarchical%20File%20System%20(HFS).asciidoc> - good explanation of HFS and HFS+ file systems
+* <https://opensource.apple.com/source/IOStorageFamily/IOStorageFamily-116/IOApplePartitionScheme.h> - Apple's code with Apple partitions and zero block definitions
 * <https://en.wikipedia.org/wiki/Apple_Partition_Map#Layout> - overview of Apple partition map
 * <https://developer.apple.com/legacy/library/documentation/mac/Files/Files-102.html> - Apple documentation on Master Directory Block structure
 * <http://wiki.osdev.org/UDF> - overview of UDF
