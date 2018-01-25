@@ -348,7 +348,8 @@ def processImage(image, offset):
             try:
                 applePartitionMapInfo = apple.parsePartitionMap(applePartitionMapData)
                 # Add partition type value to list
-                partitionTypes.append(applePartitionMapInfo.find('partitionType').text)
+                partitionType = applePartitionMapInfo.find('partitionType').text
+                partitionTypes.append(partitionType)
                 fsApple.append(applePartitionMapInfo)
                 parsedApplePartitionMap = True
             except Exception:
@@ -363,7 +364,8 @@ def processImage(image, offset):
                 try:
                     applePartitionMapInfo = apple.parsePartitionMap(applePartitionMapData)
                     # Add partition type value to list
-                    partitionTypes.append(applePartitionMapInfo.find('partitionType').text)
+                    partitionType = applePartitionMapInfo.find('partitionType').text
+                    partitionTypes.append(partitionType)
                     fsApple.append(applePartitionMapInfo)
                     parsedApplePartitionMap = True
                 except Exception:
