@@ -104,8 +104,11 @@ def parseMasterDirectoryBlock(bytesData):
                        bc.bytesToUShortInt(bytesData[18:20]))
     shared.addProperty(properties, "blockCount",
                        bc.bytesToUInt(bytesData[20:24]))
+
+    charsVolumeName = bc.bytesToUnsignedChar(bytesData[36:37])
+
     shared.addProperty(properties, "volumeName",
-                       bc.bytesToText(bytesData[37:63]))
+                       bc.bytesToText(bytesData[37:37 + charsVolumeName]))
 
     return properties
 

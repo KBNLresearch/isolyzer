@@ -150,7 +150,8 @@ def bytesToText(bytestring):
 
     # Set encoding and error mode
     enc = "utf-8"
-    errorMode = "strict"
+    #errorMode = "strict"
+    errorMode = "ignore"
 
     try:
         # Decode to utf-8
