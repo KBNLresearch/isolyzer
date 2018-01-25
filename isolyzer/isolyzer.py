@@ -42,7 +42,7 @@ scriptPath, scriptName = os.path.split(sys.argv[0])
 if len(scriptName) == 0:
     scriptName = 'isolyzer'
 
-__version__ = '1.1.0'
+__version__ = '1.2.0'
 
 # Create parser
 parser = argparse.ArgumentParser(
@@ -354,8 +354,18 @@ def processImage(image, offset):
                 parsedApplePartitionMap = True
             except Exception:
                 parsedApplePartitionMap = False
+                partitionType = ''
 
-            # shared.addProperty(tests, "parsedApplePartitionMap", str(parsedApplePartitionMap))
+            # If partitionType is Apple_HFS, parse corresponding Master Directory Block
+            if partitionType == 'Apple_HFS':
+                offsetHFS = 512 * applePartitionMapInfo.find('partitionBlockStart').text
+                masterDirectoryBlockData = isoBytes[offsetHFS + 1024:offsetHFS + 1536]
+                try:
+                    masterDirectoryBlockInfo = apple.parseMasterDirectoryBlock(masterDirectoryBlockData)
+                    fsApple.append(masterDirectoryBlockInfo)
+                    parsedMasterDirectoryBlock = True
+                except Exception:
+                    parsedMasterDirectoryBlock = False
 
             # Iterate over remaining partition map entries
             pOffset = 1024
@@ -370,6 +380,18 @@ def processImage(image, offset):
                     parsedApplePartitionMap = True
                 except Exception:
                     parsedApplePartitionMap = False
+                    partitionType = ''
+
+                # If partitionType is Apple_HFS, parse corresponding Master Directory Block
+                if partitionType == 'Apple_HFS':
+                    offsetHFS = 512 * applePartitionMapInfo.find('partitionBlockStart').text
+                    masterDirectoryBlockData = isoBytes[offsetHFS + 1024:offsetHFS + 1536]
+                    try:
+                        masterDirectoryBlockInfo = apple.parseMasterDirectoryBlock(masterDirectoryBlockData)
+                        fsApple.append(masterDirectoryBlockInfo)
+                        parsedMasterDirectoryBlock = True
+                    except Exception:
+                        parsedMasterDirectoryBlock = False
 
                 pOffset += 512
 
