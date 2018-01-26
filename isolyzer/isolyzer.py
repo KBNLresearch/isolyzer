@@ -277,17 +277,13 @@ def processImage(image, offset):
         # Get file size in bytes
         isoFileSize = os.path.getsize(image)
 
-        # Set no. of sectors to read.
-        sectorsToRead = 1000
-
         # Set these flags to initial value
         containsAppleMasterDirectoryBlock = False
         containsHFSPlusVolumeHeader = False
         containsAppleFS = False
 
         byteStart = 0
-        noBytes = min(sectorsToRead*2048, isoFileSize)
-        isoBytes = readFileBytes(image, byteStart, noBytes)
+        isoBytes = readFileBytes(image, byteStart, isoFileSize)
 
         # Does image match byte signature for an ISO 9660 image?
         containsISO9660Signature = isoBytes[32769:32774] == b'CD001' \
@@ -386,6 +382,7 @@ def processImage(image, offset):
                 if partitionType == 'Apple_HFS':
                     offsetHFS = 512 * applePartitionMapInfo.find('partitionBlockStart').text
                     masterDirectoryBlockData = isoBytes[offsetHFS + 1024:offsetHFS + 1536]
+
                     try:
                         masterDirectoryBlockInfo = apple.parseMasterDirectoryBlock(masterDirectoryBlockData)
                         fsApple.append(masterDirectoryBlockInfo)
