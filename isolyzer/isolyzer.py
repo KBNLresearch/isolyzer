@@ -21,6 +21,7 @@ its filesystem-level headers.
 from __future__ import division
 import sys
 import os
+import mmap
 import time
 import glob
 import re
@@ -42,7 +43,7 @@ scriptPath, scriptName = os.path.split(sys.argv[0])
 if len(scriptName) == 0:
     scriptName = 'isolyzer'
 
-__version__ = '1.2.0'
+__version__ = '1.3.0'
 
 # Create parser
 parser = argparse.ArgumentParser(
@@ -69,17 +70,28 @@ def checkFileExists(fileIn):
         errorExit(msg)
 
 
-def readFileBytes(file, byteStart, noBytes):
-    """Read file, return contents as a byte object"""
+def fileToMemoryMap(filename):
+    """Read contents of filename to memory map object"""
 
-    # Open file
-    f = open(file, "rb")
+    # Open filename
+    f = open(filename, "rb")
 
-    # Set position to byteStart
-    f.seek(byteStart)
+    # Call to mmap is different on Linux and Windows, so we need to know
+    # the current platform
+    platform = sys.platform
 
-    # Put contents of file into a byte object.
-    fileData = f.read(noBytes)
+    try:
+        if platform == "win32":
+            # Parameters for Windows may need further fine-tuning ...
+            fileData = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+        else:
+            # This works for Linux (and Cygwin on Windows). Not too sure
+            # about other platforms like Mac OS though
+            fileData = mmap.mmap(f.fileno(), 0, mmap.MAP_SHARED, mmap.PROT_READ)
+    except ValueError:
+        # mmap fails on empty files.
+        fileData = ""
+
     f.close()
 
     return fileData
@@ -282,8 +294,8 @@ def processImage(image, offset):
         containsHFSPlusVolumeHeader = False
         containsAppleFS = False
 
-        byteStart = 0
-        isoBytes = readFileBytes(image, byteStart, isoFileSize)
+        # Contents of file to memory map object
+        isoBytes = fileToMemoryMap(image)
 
         # Does image match byte signature for an ISO 9660 image?
         containsISO9660Signature = isoBytes[32769:32774] == b'CD001' \
