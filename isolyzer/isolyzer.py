@@ -43,7 +43,7 @@ scriptPath, scriptName = os.path.split(sys.argv[0])
 if len(scriptName) == 0:
     scriptName = 'isolyzer'
 
-__version__ = '1.3.0'
+__version__ = '1.3.1'
 
 # Create parser
 parser = argparse.ArgumentParser(
@@ -504,6 +504,11 @@ def processImage(image, offset):
 
         if containsUDF:
 
+            # Initialise flags 
+            parsedUDFLogicalVolumeDescriptor = False
+            parsedUDFLogicalVolumeIntegrityDescriptor = False
+            parsedUDFPartitionDescriptor = False
+
             # Create element to store properties of UDF filesystem
             fsUDF = ET.Element("fileSystem")
 
@@ -706,7 +711,7 @@ def processImage(image, offset):
             failureMessage = "runtime error (please report to developers)"
         else:
             failureMessage = "unknown error (please report to developers)"
-            # raise
+            raise
         printWarning(failureMessage)
 
     # Add success outcome to status info
