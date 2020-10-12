@@ -18,7 +18,7 @@ The easiest method to install Isolyzer is to use the [*pip* package manager](htt
 
 ## Installation with pip 
 
-Before installing, you need to decide whether you want to install Isolyzer for a single user only, or do a global installation (that is: for all users). The main advantage of a single-user installation is thatn it doesn't require administrator (sudo) rights. The downside is that this will install the tool to a directory that is not included in the `PATH` environment variable by default, which means you'll have to do some (minor) configuration to make it work. A global installation will make Isolyzer usable without any configuration, but the downside is that you need administrator (sudo) rights. Both methods are explained below.
+Before installing, you need to decide whether you want to install Isolyzer for a single user only, or do a global installation (that is: for all users). The main advantage of a single-user installation is that it doesn't require administrator (sudo) rights. The downside is that this will install the tool to a directory that is not included in the `PATH` environment variable by default, which means you'll have to do some (minor) configuration to make it work. A global installation will make Isolyzer usable without any configuration, but the downside is that you need administrator (sudo) rights. Both methods are explained below.
 
 ### Single user installation (Linux)
 
@@ -177,7 +177,7 @@ binaries were used)
 The *image* element holds information about an analysed image. It contains the following child elements:
 
 * *fileInfo*: contains general information about the analysed file
-* *statusInfo*: contains information about about the status of Isolyzer's attempt at processing the file
+* *statusInfo*: contains information about the status of Isolyzer's attempt at processing the file
 * *sectorOffset*: contains the value of `--offset` as specified by the user (offset in sectors)
 * *tests*: contains outcomes of the tests that are performed by Isolyzer
 * *fileSystems*: contains technical metadata that are extracted from the filesystem-level headers.
