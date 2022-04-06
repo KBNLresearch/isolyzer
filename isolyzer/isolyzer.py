@@ -43,7 +43,7 @@ scriptPath, scriptName = os.path.split(sys.argv[0])
 if len(scriptName) == 0:
     scriptName = 'isolyzer'
 
-__version__ = '1.3.1'
+__version__ = '1.4.0-alpha'
 
 # Create parser
 parser = argparse.ArgumentParser(
@@ -307,9 +307,10 @@ def processImage(image, offset):
         containsAppleZeroBlock = isoBytes[0:2] == b'\x45\x52'
 
         # Does image contain Apple Partition Map?
-        # Important: assumption here is that partition map is present
-        # at either byte offset 512 or 2048, not both. Not sure if this is necessarily
-        # the case!
+        # TODO: assumption here is that partition map is present
+        # at either byte offset 512 or 2048, but I *think* this
+        # actually follows from the block size as defined in 
+        # the zero block.
         if isoBytes[512:514] == b'\x50\x4D':
             containsApplePartitionMap = True
             partitionMapOffset = 512
