@@ -1,0 +1,28 @@
+
+7-Zip [64] 9.20  Copyright (c) 1999-2010 Igor Pavlov  2010-11-18
+p7zip Version 9.20 (locale=en_US.UTF-8,Utf16=on,HugeFiles=on,4 CPUs)
+
+Listing archive: iso9660_udf.iso
+
+--
+Path = iso9660_udf.iso
+Type = Udf
+Comment = UDF Bridge demo
+Cluster Size = 2048
+Created = 2017-06-30 18:31:33
+
+----------
+Path = nimbie.jpg
+Folder = -
+Size = 69424
+Packed Size = 69632
+Modified = 2017-06-30 13:23:38
+Accessed = 2017-06-30 18:31:33
+
+Path = readme.txt
+Folder = -
+Size = 37
+Packed Size = 2048
+Modified = 2017-06-30 13:25:20
+Accessed = 2017-06-30 18:31:33
+

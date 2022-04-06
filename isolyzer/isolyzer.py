@@ -293,6 +293,8 @@ def processImage(image, offset):
         containsAppleMasterDirectoryBlock = False
         containsHFSPlusVolumeHeader = False
         containsAppleFS = False
+        containsApplePartitionMap = False
+        appleBlockSize = 512
 
         # Contents of file to memory map object
         isoBytes = fileToMemoryMap(image)
@@ -300,10 +302,20 @@ def processImage(image, offset):
         # Does image match byte signature for an ISO 9660 image?
         containsISO9660Signature = isoBytes[32769:32774] == b'CD001' \
             and isoBytes[34817:34822] == b'CD001'
+      
+        # Does image contain Apple Zero Block?
+        containsAppleZeroBlock = isoBytes[0:2] == b'\x45\x52'
 
         # Does image contain Apple Partition Map?
-        containsApplePartitionMap = isoBytes[0:2] == b'\x45\x52' \
-            and isoBytes[512:514] == b'\x50\x4D'
+        # Important: assumption here is that partition map is present
+        # at either byte offset 512 or 2048, not both. Not sure if this is necessarily
+        # the case!
+        if isoBytes[512:514] == b'\x50\x4D':
+            containsApplePartitionMap = True
+            partitionMapOffset = 512
+        if isoBytes[2048:2050] == b'\x50\x4D':
+            containsApplePartitionMap = True
+            partitionMapOffset = 2048
 
         # Does image contain HFS Plus Header or Master Directory Block? This also allows us to
         # identify the specific file system
@@ -332,7 +344,7 @@ def processImage(image, offset):
             containsAppleFS = True
             fsApple = ET.Element("fileSystem")
 
-        if containsApplePartitionMap:
+        if containsAppleZeroBlock:
 
             # Based on description at: https://en.wikipedia.org/wiki/Apple_Partition_Map#Layout and
             # https://opensource.apple.com/source/IOStorageFamily/IOStorageFamily-116/IOApplePartitionScheme.h
@@ -342,17 +354,19 @@ def processImage(image, offset):
             try:
                 appleZeroBlockInfo = apple.parseZeroBlock(appleZeroBlockData)
                 fsApple.append(appleZeroBlockInfo)
+                appleBlockSize = int(appleZeroBlockInfo.find("blockSize").text)
                 parsedAppleZeroBlock = True
             except Exception:
                 parsedAppleZeroBlock = False
 
             # shared.addProperty(tests, "parsedAppleZeroBlock", str(parsedAppleZeroBlock))
+        if containsApplePartitionMap:
 
             # Set up list to store all values of 'partionType' in partition map
             partitionTypes = []
 
             # Get partition map data
-            applePartitionMapData = isoBytes[512:1024]
+            applePartitionMapData = isoBytes[partitionMapOffset:partitionMapOffset + appleBlockSize]
             try:
                 applePartitionMapInfo = apple.parsePartitionMap(applePartitionMapData)
                 # Add partition type value to list
@@ -366,7 +380,7 @@ def processImage(image, offset):
 
             # If partitionType is Apple_HFS, parse corresponding Master Directory Block
             if partitionType == 'Apple_HFS':
-                offsetHFS = 512 * applePartitionMapInfo.find('partitionBlockStart').text
+                offsetHFS = appleBlockSize * applePartitionMapInfo.find('partitionBlockStart').text
                 masterDirectoryBlockData = isoBytes[offsetHFS + 1024:offsetHFS + 1536]
                 try:
                     masterDirectoryBlockInfo = apple.parseMasterDirectoryBlock(masterDirectoryBlockData)
@@ -376,9 +390,10 @@ def processImage(image, offset):
                     parsedMasterDirectoryBlock = False
 
             # Iterate over remaining partition map entries
-            pOffset = 1024
+            #pOffset = 1024
+            pOffset = partitionMapOffset + appleBlockSize
             for pMap in range(0, applePartitionMapInfo.find('numberOfPartitionEntries').text - 1):
-                applePartitionMapData = isoBytes[pOffset:pOffset+512]
+                applePartitionMapData = isoBytes[pOffset:pOffset + appleBlockSize]
                 try:
                     applePartitionMapInfo = apple.parsePartitionMap(applePartitionMapData)
                     # Add partition type value to list
@@ -392,7 +407,7 @@ def processImage(image, offset):
 
                 # If partitionType is Apple_HFS, parse corresponding Master Directory Block
                 if partitionType == 'Apple_HFS':
-                    offsetHFS = 512 * applePartitionMapInfo.find('partitionBlockStart').text
+                    offsetHFS = appleBlockSize * applePartitionMapInfo.find('partitionBlockStart').text
                     masterDirectoryBlockData = isoBytes[offsetHFS + 1024:offsetHFS + 1536]
 
                     try:
@@ -402,7 +417,7 @@ def processImage(image, offset):
                     except Exception:
                         parsedMasterDirectoryBlock = False
 
-                pOffset += 512
+                pOffset += appleBlockSize
 
             # Establish file system type from partitionType values in all partition maps
             # Source: https://en.wikipedia.org/wiki/Apple_Partition_Map#Partition_identifiers
