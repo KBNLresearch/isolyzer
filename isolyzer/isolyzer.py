@@ -294,6 +294,7 @@ def processImage(image, offset):
         containsHFSPlusVolumeHeader = False
         containsAppleFS = False
         containsApplePartitionMap = False
+        parsedAppleZeroBlock = False
         appleBlockSize = 512
 
         # Contents of file to memory map object
