@@ -22,8 +22,8 @@ def find_version(*file_paths):
         return version_match.group(1)
     raise RuntimeError("Unable to find version string.")
 
-INSTALL_REQUIRES = ['setuptools', 'six']
-PYTHON_REQUIRES = '>=2.7, !=3.0.*, !=3.1.*, <4'
+INSTALL_REQUIRES = ['setuptools']
+PYTHON_REQUIRES = '>=3.2, <4'
 
 setup(name='isolyzer',
       packages=find_packages(),
@@ -48,7 +48,5 @@ setup(name='isolyzer',
       ]},
       classifiers=[
           'Environment :: Console',
-          'Programming Language :: Python :: 2',
-          'Programming Language :: Python :: 2.7',
           'Programming Language :: Python :: 3',]
      )
