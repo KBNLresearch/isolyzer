@@ -25,6 +25,17 @@ def find_version(*file_paths):
 INSTALL_REQUIRES = ['setuptools']
 PYTHON_REQUIRES = '>=3.2, <4'
 
+TEST_DEPS = [
+    'pre-commit',
+    'pytest',
+    'pylint',
+    'pytest-coverage',
+    'lxml'
+]
+EXTRAS = {
+    'testing': TEST_DEPS,
+}
+
 setup(name='isolyzer',
       packages=find_packages(),
       version=find_version('isolyzer', 'isolyzer.py'),
