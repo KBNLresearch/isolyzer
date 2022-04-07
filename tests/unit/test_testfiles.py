@@ -20,11 +20,8 @@ ISOLYZER_DIR = os.path.split(os.path.split(SCRIPT_DIR)[0])[0]
 # Directory with test files
 testFilesDir = os.path.join(ISOLYZER_DIR, "testFiles")
 
-print("*****" + testFilesDir)
-
 # All files in test files dir, excluding .md file
 testFiles = glob.glob(os.path.join(testFilesDir, '*.iso'))
-print("*****" + str(len(testFiles)))
 
 @pytest.mark.parametrize('input', testFiles)
 
@@ -32,6 +29,5 @@ def test_status(input):
     """
     Tests for any internal errors based on statusInfo value
     """
-    #fName = os.path.basename(input)
     outIsolyzer = processImage(input, 0)
     assert outIsolyzer.findtext('./statusInfo/success') == "True"
