@@ -307,17 +307,14 @@ def processImage(image, offset):
         # Does image contain Apple Zero Block?
         containsAppleZeroBlock = isoBytes[0:2] == b'\x45\x52'
 
+        if containsAppleZeroBlock:
+            # Read block size
+            appleBlockSize = bc.bytesToUShortInt(isoBytes[2:4])
+
         # Does image contain Apple Partition Map?
-        # TODO: assumption here is that partition map is present
-        # at either byte offset 512 or 2048, but I *think* this
-        # actually follows from the block size as defined in 
-        # the zero block.
-        if isoBytes[512:514] == b'\x50\x4D':
+        if isoBytes[appleBlockSize:appleBlockSize + 2] == b'\x50\x4D':
             containsApplePartitionMap = True
-            partitionMapOffset = 512
-        if isoBytes[2048:2050] == b'\x50\x4D':
-            containsApplePartitionMap = True
-            partitionMapOffset = 2048
+            partitionMapOffset = appleBlockSize
 
         # Does image contain HFS Plus Header or Master Directory Block? This also allows us to
         # identify the specific file system
@@ -356,7 +353,6 @@ def processImage(image, offset):
             try:
                 appleZeroBlockInfo = apple.parseZeroBlock(appleZeroBlockData)
                 fsApple.append(appleZeroBlockInfo)
-                appleBlockSize = int(appleZeroBlockInfo.find("blockSize").text)
                 parsedAppleZeroBlock = True
             except Exception:
                 parsedAppleZeroBlock = False
@@ -392,7 +388,6 @@ def processImage(image, offset):
                     parsedMasterDirectoryBlock = False
 
             # Iterate over remaining partition map entries
-            #pOffset = 1024
             pOffset = partitionMapOffset + appleBlockSize
             for pMap in range(0, applePartitionMapInfo.find('numberOfPartitionEntries').text - 1):
                 applePartitionMapData = isoBytes[pOffset:pOffset + appleBlockSize]
