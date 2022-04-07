@@ -29,7 +29,6 @@ import codecs
 import argparse
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
-from six import u
 from . import iso9660 as iso
 from . import udf as udf
 from . import apple as apple
@@ -134,14 +133,7 @@ def makeHumanReadable(element, remapTable={}):
         # Step 2: convert all values to text strings.
 
         # First set up list of all numeric data types,
-        # which is dependent on the Python version used
-
-        if sys.version.startswith("2"):
-            # Python 2.x
-            numericTypes = [int, long, float, bool]
-            # Long type is deprecated in Python 3.x!
-        else:
-            numericTypes = [int, float, bool]
+        numericTypes = [int, float, bool]
 
         # Convert
 
@@ -166,10 +158,7 @@ def writeElement(elt, codec):
     """Writes element as XML to stdout using defined codec"""
 
     # Element to string
-    if sys.version.startswith("2"):
-        xmlOut = ET.tostring(elt, 'UTF-8', 'xml')
-    if sys.version.startswith("3"):
-        xmlOut = ET.tostring(elt, 'unicode', 'xml')
+    xmlOut = ET.tostring(elt, 'unicode', 'xml')
 
     # Make xml pretty
     xmlPretty = minidom.parseString(xmlOut).toprettyxml('    ')
@@ -187,36 +176,12 @@ def stripSurrogatePairs(ustring):
     # This works for Python 3.x, but not for 2.x!
     # Source: http://stackoverflow.com/q/19649463/1209004
 
-    if sys.version.startswith('3'):
-        try:
-            ustring.encode('utf-8')
-        except UnicodeEncodeError:
-            # Strip away surrogate pairs
-            tmp = ustring.encode('utf-8', 'replace')
-            ustring = tmp.decode('utf-8', 'ignore')
-
-    # In Python 2.x we need to use regex
-    # Source: http://stackoverflow.com/a/18674109/1209004
-
-    if sys.version.startswith('2'):
-        # Generate regex for surrogate pair detection
-
-        lone = re.compile(
-            u(r"""(?x)            # verbose expression (allows comments)
-            (                    # begin group
-            [\ud800-\udbff]      #   match leading surrogate
-            (?![\udc00-\udfff])  #   but only if not followed by trailing surrogate
-            )                    # end group
-            |                    #  OR
-            (                    # begin group
-            (?<![\ud800-\udbff]) #   if not preceded by leading surrogate
-            [\udc00-\udfff]      #   match trailing surrogate
-            )                   # end group
-            """))
-
-        # Remove surrogates (i.e. replace by empty string)
-        tmp = lone.sub(r'', ustring).encode('utf-8')
-        ustring = tmp.decode('utf-8')
+    try:
+        ustring.encode('utf-8')
+    except UnicodeEncodeError:
+        # Strip away surrogate pairs
+        tmp = ustring.encode('utf-8', 'replace')
+        ustring = tmp.decode('utf-8', 'ignore')
 
     return ustring
 
@@ -747,13 +712,8 @@ def main():
     global out
     global err
 
-    # Set encoding of the terminal to UTF-8
-    if sys.version.startswith("2"):
-        out = codecs.getwriter("UTF-8")(sys.stdout)
-        err = codecs.getwriter("UTF-8")(sys.stderr)
-    elif sys.version.startswith("3"):
-        out = codecs.getwriter("UTF-8")(sys.stdout.buffer)
-        err = codecs.getwriter("UTF-8")(sys.stderr.buffer)
+    out = codecs.getwriter("UTF-8")(sys.stdout.buffer)
+    err = codecs.getwriter("UTF-8")(sys.stderr.buffer)
 
     # Get input from command line
     args = parseCommandLine()
