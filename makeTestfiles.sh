@@ -25,6 +25,9 @@ mkisofs -V "ISO9660/Apple_Extensions" -J -r -R -apple -o $outDir/iso9660_apple.i
 echo "UDF Bridge (ISO 9660 / UDF hybrid)"
 mkisofs -V "UDF Bridge" -J -r -R -udf -o $outDir/iso9660_udf.iso $dataDir/
 
+echo "UDF//ISO 9660/HFS hybrid"
+mkisofs -V "UDF Bridge" -J -r -R -udf -hfs -part -o $outDir/iso9660_udf_hfs.iso $dataDir/
+
 echo "UDF (empty fs)"
 rm $outDir/udf.iso
 truncate -s 600K $outDir/udf.iso
