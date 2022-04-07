@@ -10,40 +10,41 @@ dataDir="$instDir"/dataTestfiles
 # Output directory
 outDir="$instDir"/testFiles
 
-# ISO 9660 only
+echo "ISO 9660 only"
 mkisofs -V "ISO 9660 only demo" -J -r -R -o $outDir/iso9660.iso $dataDir/
 
-# Hybrid ISO 9660 / HFS
-mkisofs -V "ISO 9660 / HFS Hybrid demo" -J -r -R -hfs -o $outDir/iso9660_hfs.iso $dataDir/
+echo "Hybrid ISO 9660/HFS file system"
+mkisofs -V "ISO 9660 + HFS hybrid demo" -J -r -R -hfs -o $outDir/iso9660_hfs.iso $dataDir/
 
-# Hybrid ISO 9660  with Apple extensions
-# TODO: not clear how this works: no Apple blocks in first 32768 bytes, also image cannot be mounted
-# as hfs or hfsplus under Linux!
-# mkisofs -V "ISO 9660 + Apple extensions demo" -J -r -R -apple -o $outDir/iso9660_apple.iso $dataDir/
+echo "Hybrid ISO 9660/HFS file system with partition table"
+mkisofs -V "ISO 9660 + HFS hybrid with partition table demo" -J -r -R -hfs -part -o $outDir/iso9660_hfs_part.iso $dataDir/
 
-# UDF Bridge (ISO 9660 / UDF hybrid)
-mkisofs -V "UDF Bridge demo" -J -r -R -UDF -o $outDir/iso9660_udf.iso $dataDir/
+echo "ISO 9660/HFS file system with Apple extensions"
+mkisofs -V "ISO 9660 + Apple Extensions demo" -J -r -R -apple -o $outDir/iso9660_apple.iso $dataDir/
 
-# UDF (empty fs)
+echo "UDF Bridge (ISO 9660 / UDF hybrid)"
+mkisofs -V "UDF Bridge demo" -J -r -R -udf -o $outDir/iso9660_udf.iso $dataDir/
+
+echo "UDF (empty fs)"
 rm $outDir/udf.iso
 truncate -s 600K $outDir/udf.iso
 mkudffs --media-type=dvd $outDir/udf.iso
 
-# HFS (empty fs)
+echo "HFS (empty fs)"
 rm $outDir/hfs.iso
 truncate -s 600K $outDir/hfs.iso
 mkfs.hfsplus -h -b 2048 -v "HFS demo" $outDir/hfs.iso
 
-# HFS Plus (empty fs)
+echo "HFS Plus (empty fs)"
 rm $outDir/hfsplus.iso
 truncate -s 600K $outDir/hfsplus.iso
 mkfs.hfsplus -b 2048 -v "HFS Plus demo" $outDir/hfsplus.iso
 
-# Truncated file
+echo "Truncated ISO 9660 file"
 cp $outDir/iso9660.iso $outDir/iso9660_trunc.iso
 truncate -s 49157 $outDir/iso9660_trunc.iso
 
-# File truncated before PVD
+echo "ISO 9660 truncated before PVD"
 cp $outDir/iso9660.iso $outDir/iso9660_nopvd.iso
 truncate -s 32860 $outDir/iso9660_nopvd.iso
 
