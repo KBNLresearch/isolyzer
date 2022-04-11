@@ -102,7 +102,7 @@ def test_fileSystems(input):
     fName = os.path.basename(input)
     outIsolyzer = processImage(input, 0)
     if fName in fileSystems.keys():
-        # List of know file systems
+        # List of known file systems
         fsKnown = fileSystems[fName]
         # Set up list to store detected file systems
         fsDetected = []
