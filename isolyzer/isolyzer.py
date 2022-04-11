@@ -276,10 +276,20 @@ def processImage(image, offset):
             # Read block size
             appleBlockSize = bc.bytesToUShortInt(isoBytes[2:4])
 
-        # Does image contain Apple Partition Map?
-        if isoBytes[appleBlockSize:appleBlockSize + 2] == b'\x50\x4D':
-            containsApplePartitionMap = True
-            partitionMapOffset = appleBlockSize
+        # Look for Apple Partition Map. Since we cannot rely on the block size
+        # defined in the zero block, we do this by trial and error. First create
+        # a list with all possible start offsets (not sure if 1024 and 1536 are even used in the wild)
+        pmOffsets = [512, 1024, 1536, 2048, appleBlockSize]
+        # Remove duplicates and sort
+        pmOffsets = sorted(list(set(pmOffsets)))
+
+        # Iterate over offsets, and stop at first match
+        for pmOffset in pmOffsets:
+            if isoBytes[pmOffset:pmOffset + 2] == b'\x50\x4D':
+                containsApplePartitionMap = True
+                partitionMapOffset = pmOffset
+                appleBlockSize = pmOffset
+                break
 
         # Does image contain HFS Plus Header or Master Directory Block? This also allows us to
         # identify the specific file system
