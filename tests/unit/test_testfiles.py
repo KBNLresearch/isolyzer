@@ -89,5 +89,26 @@ def test_sizeDifference(input):
     outIsolyzer = processImage(input, 0)
     if fName in sizeDifferenceSectors.keys():
         sizeDif = sizeDifferenceSectors[fName]
-        elt = outIsolyzer.find('./tests/sizeDifferenceSectors')
-        assert elt.text == pytest.approx(sizeDif)
+        sdElt = outIsolyzer.find('./tests/sizeDifferenceSectors')
+        assert sdElt.text == pytest.approx(sizeDif)
+
+@pytest.mark.parametrize('input', testFiles)
+
+def test_fileSystems(input):
+    """
+    Tests if detected file systems match known
+    file systems
+    """
+    fName = os.path.basename(input)
+    outIsolyzer = processImage(input, 0)
+    if fName in fileSystems.keys():
+        # List of know file systems
+        fsKnown = fileSystems[fName]
+        # Set up list to store detected file systems
+        fsDetected = []
+        for fileSystem in outIsolyzer.findall('./fileSystems/fileSystem'):
+            fsType = fileSystem.get('TYPE')
+            # Add fs type to list of detected file systems
+            fsDetected.append(fsType)
+        # Test if file systems in both lists are identical
+        assert set(fsKnown) == set(fsDetected)
