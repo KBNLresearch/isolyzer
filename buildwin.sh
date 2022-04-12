@@ -6,7 +6,7 @@
 # Precondition: 64-bit version of Wine is already installed. 
 
 # WinPython download URLS
-downloadURL64bit=https://sourceforge.net/projects/winpython/files/WinPython_2.7/2.7.13.1/WinPython-64bit-2.7.13.1Zero.exe/download
+downloadURL64bit=https://www.python.org/ftp/python/3.10.4/python-3.10.4-embed-amd64.zip
 downloadURL32bit=https://sourceforge.net/projects/winpython/files/WinPython_2.7/2.7.13.1/WinPython-32bit-2.7.13.1Zero.exe/download
 
 # PyInstaller spec files that defines build options
@@ -25,17 +25,15 @@ installPython(){
     # - $1: bitness (32 or 64)
     # - $2: download URL
     echo "Downloading installer"
-    wget $2 -O pyTemp.exe
+    wget $2 -O pyTemp.zip
     echo ""
-    echo "Installing Python. This requires some user input"
-    echo ""
-    echo "Follow installer instructions. For Destination Folder replace default path with C:\Python27_"$1
+    echo "Installing Python."
     echo ""
 
-    WINEDEBUG=$WineDebug wine pyTemp.exe
+    unzip pyTemp.zip -d /home/johan/.wine/drive_c/Python3_64
 
     echo "Removing installer"
-    rm pyTemp.exe
+    rm pyTemp.zip
 }
 
 installPyInstaller(){
@@ -94,7 +92,7 @@ buildBinaries(){
 
 echo "64 bit Python"
 
-if [ -d $HOME"/.wine/drive_c/Python27_64" ]; then  
+if [ -d $HOME"/.wine/drive_c/Python3_64" ]; then  
     echo "Python (64 bit) already installed"
 else
     echo "Python (64 bit) not yet installed, installing now"
@@ -103,7 +101,7 @@ else
 fi
 
 # Get path to Python root
-pyRoot64=$(ls -d ~/.wine/drive_c/Python27_64/python-*)
+pyRoot64=$(ls -d ~/.wine/drive_c/Python3_64)
 
 # Python interpreter
 python64=$pyRoot64"/python.exe" 
@@ -118,21 +116,21 @@ if [ -d $HOME"/.wine/drive_c/Python27_32" ]; then
 else
     echo "Python (32 bit) not yet installed, installing now"
     echo ""
-    installPython 32 $downloadURL32bit
+    #installPython 32 $downloadURL32bit
 fi
 
 # Get path to Python root
-pyRoot32=$(ls -d ~/.wine/drive_c/Python27_32/python-*)
+#pyRoot32=$(ls -d ~/.wine/drive_c/Python27_32/python-*)
 
 # Python interpreter
-python32=$pyRoot32"/python.exe" 
+#python32=$pyRoot32"/python.exe" 
 
 # Install PyInstaller (if not installed already)
-installPyInstaller $python32
+#installPyInstaller $python32
 
 echo "Building binaries, 64 bit"
 buildBinaries 64 $pyRoot64 $python64 $specFile64bit
 
-echo "Building binaries, 32 bit"
-buildBinaries 32 $pyRoot32 $python32 $specFile32bit
+#echo "Building binaries, 32 bit"
+#buildBinaries 32 $pyRoot32 $python32 $specFile32bit
 
