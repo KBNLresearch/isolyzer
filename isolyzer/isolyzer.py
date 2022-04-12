@@ -767,5 +767,6 @@ def main():
 
     processImages(ISOImages, sectorOffset)
 
+
 if __name__ == "__main__":
     main()
