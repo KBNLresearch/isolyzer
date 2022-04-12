@@ -752,8 +752,6 @@ def main():
     # Get input from command line
     args = parseCommandLine()
 
-    # Input
-
     # In Linux this works for wildcard expressions (but in Windows this is only a string!)
     if platform.system() == "Windows":
         # Windows doesn't natively handle wildcard expansion, so we need to do it ourselves
