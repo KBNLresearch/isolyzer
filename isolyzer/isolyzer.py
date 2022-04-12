@@ -24,6 +24,7 @@ import os
 import mmap
 import time
 import glob
+import platform
 import re
 import codecs
 import argparse
@@ -192,6 +193,7 @@ def parseCommandLine():
     parser.add_argument('ISOImages',
                         action="store",
                         type=str,
+                        nargs='+',
                         help="input ISO image(s) (wildcards allowed)")
     parser.add_argument('--version', '-v',
                         action='version',
@@ -729,7 +731,14 @@ def main():
     args = parseCommandLine()
 
     # Input
-    ISOImages = glob.glob(args.ISOImages)
+
+    # In Linux this works for wildcard expressions (but in Windows this is only a string!)
+    if platform.system() == "Windows":
+        # Windows doesn't natively handle wildcard expansion, so we need to do it ourselves
+        ISOImages = glob.glob(args.ISOImages[0])
+    else:
+        # In Linux the OS takes care of the wildcard expansion
+        ISOImages = args.ISOImages
 
     # Sector offset
     sectorOffset = args.sectorOffset
