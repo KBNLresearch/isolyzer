@@ -718,6 +718,28 @@ def processImage(image, offset):
     return imageRoot
 
 
+def processImages(images, offset):
+    """
+    Process list of images
+    """
+    # Create output element
+    root = ET.Element("isolyzer")
+
+    # Add some info on isolyzer and the version used
+    toolInfo = ET.Element('toolInfo')
+    shared.addProperty(toolInfo, "toolName", scriptName)
+    shared.addProperty(toolInfo, "toolVersion", __version__)
+    root.append(toolInfo)
+
+    for image in images:
+        result = processImage(image, offset)
+        root.append(result)
+
+    # Write output
+    makeHumanReadable(root)
+    writeElement(root, out)
+
+
 def main():
     """Main command line application"""
 
@@ -743,22 +765,7 @@ def main():
     # Sector offset
     sectorOffset = args.sectorOffset
 
-    # Create output element
-    root = ET.Element("isolyzer")
-
-    # Add some info on isolyzer and the version used
-    toolInfo = ET.Element('toolInfo')
-    shared.addProperty(toolInfo, "toolName", scriptName)
-    shared.addProperty(toolInfo, "toolVersion", __version__)
-    root.append(toolInfo)
-
-    for image in ISOImages:
-        result = processImage(image, sectorOffset)
-        root.append(result)
-
-    # Write output
-    makeHumanReadable(root)
-    writeElement(root, out)
+    processImages(ISOImages, sectorOffset)
 
 if __name__ == "__main__":
     main()
