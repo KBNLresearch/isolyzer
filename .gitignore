@@ -24,7 +24,10 @@
 *.md.html
 bin
 .pydevproject
-
+# Cache dirs
+#################
+__pycache__
+.pytest_cache
 # Netbeans Files #
 #################
 nbactions.xml
