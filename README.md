@@ -5,6 +5,7 @@
 *Isolyzer* verifies if the file size of a CD / DVD image ("ISO image") is consistent with the information in its filesystem-level headers. The following file systems are supported:
 
 * [ISO 9660](https://en.wikipedia.org/wiki/ISO_9660)
+* [High Sierra](https://web.archive.org/web/20220111023846/https://www.os2museum.com/files/docs/cdrom/CDROM_Working_Paper-1986.pdf)
 * [Universal Disk Format](https://en.wikipedia.org/wiki/Universal_Disk_Format) (UDF)
 * Apple [Hierarchical File System](https://en.wikipedia.org/wiki/Hierarchical_File_System) (HFS)
 * Apple [HFS+](https://en.wikipedia.org/wiki/HFS_Plus)
@@ -24,41 +25,53 @@ Before installing, you need to decide whether you want to install Isolyzer for a
 
 Enter the following command:
 
-    pip install isolyzer --user
+```
+pip install isolyzer --user
+```
 
 This will install the software to the `.local` folder (hidden by default!) in your home directory (`~/.local`). Next try to run Isolyzer by entering:
 
-    isolyzer
+```
+isolyzer
+```
 
 Most likely this will result in:
 
-    isolyzer: command not found
+```
+isolyzer: command not found
+```
 
 If this happens, you will need to add the directory `~/.local/bin` (which is where the Isolyzer command-line tool is installed) to the `PATH` environment variable (you only need to do this once). To do this, locate the (hidden) file `.profile` in you home directory (`~/`), and open it in a text editor. Then add the following lines at the end of the file:
 
-    # set PATH so it includes the user's .local bin if it exists
-    if [ -d "$HOME/.local/bin" ] ; then
-        PATH="$HOME/.local/bin:$PATH"
-    fi
+```
+# set PATH so it includes the user's .local bin if it exists
+if [ -d "$HOME/.local/bin" ] ; then
+    PATH="$HOME/.local/bin:$PATH"
+fi
+```
 
 Save the file, log out of your session and then log in again. Open a command terminal and type:
 
-     isolyzer
+```
+isolyzer
+```
 
 If all went well you now see this:
 
-    usage: isolyzer [-h] [--version] ISOImage
-    isolyzer: error: too few arguments
+```
+usage: isolyzer [-h] [--version] ISOImage
+isolyzer: error: too few arguments
+```
 
 Which means that the installation was successful!
-
 
 ### Global installation (Linux)
 
 Simply enter:
 
-    sudo -H pip install isolyzer
-
+```
+sudo -H pip install isolyzer
+```
 
 No further configuration is needed in this case. 
 
@@ -66,8 +79,9 @@ No further configuration is needed in this case.
 
 The above command lines will only install stable versions of isolyzer. In order to install the latest pre-release, add the `--pre` switch. For example:
 
-    sudo -H pip install isolyzer --pre
-
+```
+sudo -H pip install isolyzer --pre
+```
 
 ## Installation from stand-alone binaries (Windows)
 
@@ -75,19 +89,25 @@ Go to the *release* page of Isolyzer's Github repo:
 
 <https://github.com/KBNLresearch/isolyzer/releases>
 
-Then download the file 'isolyzer_x_y_z_win32.zip' from the most recent release. Unzip the file to whatever location on your machine you like. You'll now be able to run Isolyzer from a command window by entering 'isolyzer', including its full path. For example, if you extracted the zip file isolyzer_0_2_0_win32.zip' to directory 'c:\test', you have to enter:
+Then download the file 'isolyzer_x.y.z_win64.zip' from the most recent release. Unzip the file to whatever location on your machine you like. You'll now be able to run Isolyzer from a command window by entering 'isolyzer', including its full path. For example, if you extracted the zip file 'isolyzer_1.4.0_win64.zip' to directory 'c:\isolyzer', you have to enter:
 
-    c:\test\isolyzer_0_2_0_win32\isolyzer
+```
+c:\\isolyzer\isolyzer
+```
 
 ## Upgrade Isolyzer to the latest version
 
 If you installed with pip, enter this for a single user installation:
 
-    pip install isolyzer -U --user
+```
+pip install isolyzer -U --user
+```
 
 For a global installation:
 
-    sudo -H pip install isolyzer -U
+```
+sudo -H pip install isolyzer -U
+```
 
 If you installed from the Windows binaries, repeat the instructions from the 'Installation from stand-alone binaries' section above (you may want to remove the old installation manually).
 
@@ -95,7 +115,9 @@ If you installed from the Windows binaries, repeat the instructions from the 'In
 
 ### Usage
 
-    isolyzer [-h] [--version] [--offset SECTOROFFSET] ISOImage
+```
+isolyzer [-h] [--version] [--offset SECTOROFFSET] ISOImage
+```
 
 ### Positional arguments
 
@@ -118,6 +140,12 @@ For an ISO 9660 file system, Isolyzer locates and parses its [Primary Volume Des
 *SizeExpectedISO* =  (*Volume Space Size* - *Offset*) x *Logical Block Size*
 
 Here, *Offset* is a user-defined sector offset (its value is 0 by default, but see example 4 below for an explanation).  
+
+### High Sierra
+
+For the High Sierra file system, Isolyzer locates and parses the Standard File Structure Volume Descriptor (SFSVD). From the SFSVD it then reads the *Volume Space Size* and *Logical Block Size* fields (which both have the same meaning as in ISO 9660). The expected file size is then calculated as:
+
+*SizeExpectedHS* =  (*Volume Space Size* - *Offset*) x *Logical Block Size*
 
 ### Apple partition without Apple Partition Map
 
@@ -208,11 +236,13 @@ an internal error that prevented Isolyzer from processing the file.
 equals “False”), this field gives further details about the reason of the failure.
 Examples are:
 
-        memory error (file size too large)
+```
+memory error (file size too large)
 
-        runtime error (please report to developers)
+runtime error (please report to developers)
 
-        unknown error (please report to developers)
+unknown error (please report to developers)
+```
 
 ## tests element
 
@@ -241,6 +271,7 @@ The *fileSystems* element contains one or more *fileSystem* elements.
 The *fileSystem* element contains technical metadata that are extracted from the filesystem-level headers. This element is repeated for each identified file system. Each *fileSystem* element has a *TYPE* attribute whose value indicates the file system. Currently supported values are:
 
 * *ISO 9660*
+* *High Sierra*
 * *UDF*
 * *HFS*
 * *HFS+*
@@ -260,441 +291,309 @@ Below are some examples of Isolyzer's output for different kinds of images. Note
 
 ### Example 1: ISO 9660 image has expected size 
 
-    isolyzer iso9660.iso
+```
+isolyzer iso9660.iso
+```
 
 Output:
 
-    <?xml version="1.0" ?>
-    <isolyzer>
-        <toolInfo>
-            <toolName>isolyzer</toolName>
-            <toolVersion>1.0.0b3</toolVersion>
-        </toolInfo>
-        <image>
-            <fileInfo>
-                <fileName>iso9660.iso</fileName>
-                <filePath>/home/johan/isolyzer/testFiles/iso9660.iso</filePath>
-                <fileSizeInBytes>442368</fileSizeInBytes>
-                <fileLastModified>Fri Jun 30 18:31:33 2017</fileLastModified>
-            </fileInfo>
-            <statusInfo>
-                <success>True</success>
-            </statusInfo>
-            <sectorOffset>0</sectorOffset>
-            <tests>
-                <containsKnownFileSystem>True</containsKnownFileSystem>
-                <sizeExpected>442368</sizeExpected>
-                <sizeActual>442368</sizeActual>
-                <sizeDifference>0</sizeDifference>
-                <sizeDifferenceSectors>0</sizeDifferenceSectors>
-                <sizeAsExpected>True</sizeAsExpected>
-                <smallerThanExpected>False</smallerThanExpected>
-            </tests>
-            <fileSystems>
-                <fileSystem TYPE="ISO 9660">
-                    <primaryVolumeDescriptor>
-                        <typeCode>1</typeCode>
-                        <standardIdentifier>CD001</standardIdentifier>
-                        <version>1</version>
-                        <systemIdentifier>LINUX</systemIdentifier>
-                        <volumeIdentifier>ISO 9660 only demo</volumeIdentifier>
-                        <volumeSpaceSize>216</volumeSpaceSize>
-                        <volumeSetSize>1</volumeSetSize>
-                        <volumeSequenceNumber>1</volumeSequenceNumber>
-                        <logicalBlockSize>2048</logicalBlockSize>
-                        <pathTableSize>10</pathTableSize>
-                        <typeLPathTableLocation>20</typeLPathTableLocation>
-                        <optionalTypeLPathTableLocation>0</optionalTypeLPathTableLocation>
-                        <typeMPathTableLocation>22</typeMPathTableLocation>
-                        <optionalTypeMPathTableLocation>0</optionalTypeMPathTableLocation>
-                        <volumeSetIdentifier/>
-                        <publisherIdentifier/>
-                        <dataPreparerIdentifier/>
-                        <applicationIdentifier>MKISOFS ISO9660/HFS/UDF FILESYSTEM BUILDER &amp; CDRECORD CD/DVD/BluRay CREATOR (C) 1993 E.YOUNGDALE (C) 1997 J.PEARSON/J.SCHILLING</applicationIdentifier>
-                        <copyrightFileIdentifier/>
-                        <abstractFileIdentifier/>
-                        <bibliographicFileIdentifier/>
-                        <volumeCreationDateAndTime>2017/06/30, 18:31:33</volumeCreationDateAndTime>
-                        <volumeModificationDateAndTime>2017/06/30, 18:31:33</volumeModificationDateAndTime>
-                        <volumeExpirationDateAndTime>0/00/00, 00:00:00</volumeExpirationDateAndTime>
-                        <volumeEffectiveDateAndTime>2017/06/30, 18:31:33</volumeEffectiveDateAndTime>
-                        <fileStructureVersion>1</fileStructureVersion>
-                    </primaryVolumeDescriptor>
-                </fileSystem>
-            </fileSystems>
-        </image>
-    </isolyzer>
+```xml
+<?xml version="1.0" ?>
+<isolyzer>
+    <toolInfo>
+        <toolName>isolyzer</toolName>
+        <toolVersion>1.0.0b3</toolVersion>
+    </toolInfo>
+    <image>
+        <fileInfo>
+            <fileName>iso9660.iso</fileName>
+            <filePath>/home/johan/isolyzer/testFiles/iso9660.iso</filePath>
+            <fileSizeInBytes>442368</fileSizeInBytes>
+            <fileLastModified>Fri Jun 30 18:31:33 2017</fileLastModified>
+        </fileInfo>
+        <statusInfo>
+            <success>True</success>
+        </statusInfo>
+        <sectorOffset>0</sectorOffset>
+        <tests>
+            <containsKnownFileSystem>True</containsKnownFileSystem>
+            <sizeExpected>442368</sizeExpected>
+            <sizeActual>442368</sizeActual>
+            <sizeDifference>0</sizeDifference>
+            <sizeDifferenceSectors>0</sizeDifferenceSectors>
+            <sizeAsExpected>True</sizeAsExpected>
+            <smallerThanExpected>False</smallerThanExpected>
+        </tests>
+        <fileSystems>
+            <fileSystem TYPE="ISO 9660">
+                <primaryVolumeDescriptor>
+                    <typeCode>1</typeCode>
+                    <standardIdentifier>CD001</standardIdentifier>
+                    <version>1</version>
+                    <systemIdentifier>LINUX</systemIdentifier>
+                    <volumeIdentifier>ISO 9660 only demo</volumeIdentifier>
+                    <volumeSpaceSize>216</volumeSpaceSize>
+                    <volumeSetSize>1</volumeSetSize>
+                    <volumeSequenceNumber>1</volumeSequenceNumber>
+                    <logicalBlockSize>2048</logicalBlockSize>
+                    <pathTableSize>10</pathTableSize>
+                    <typeLPathTableLocation>20</typeLPathTableLocation>
+                    <optionalTypeLPathTableLocation>0</optionalTypeLPathTableLocation>
+                    <typeMPathTableLocation>22</typeMPathTableLocation>
+                    <optionalTypeMPathTableLocation>0</optionalTypeMPathTableLocation>
+                    <volumeSetIdentifier/>
+                    <publisherIdentifier/>
+                    <dataPreparerIdentifier/>
+                    <applicationIdentifier>MKISOFS ISO9660/HFS/UDF FILESYSTEM BUILDER &amp; CDRECORD CD/DVD/BluRay CREATOR (C) 1993 E.YOUNGDALE (C) 1997 J.PEARSON/J.SCHILLING</applicationIdentifier>
+                    <copyrightFileIdentifier/>
+                    <abstractFileIdentifier/>
+                    <bibliographicFileIdentifier/>
+                    <volumeCreationDateAndTime>2017/06/30, 18:31:33</volumeCreationDateAndTime>
+                    <volumeModificationDateAndTime>2017/06/30, 18:31:33</volumeModificationDateAndTime>
+                    <volumeExpirationDateAndTime>0/00/00, 00:00:00</volumeExpirationDateAndTime>
+                    <volumeEffectiveDateAndTime>2017/06/30, 18:31:33</volumeEffectiveDateAndTime>
+                    <fileStructureVersion>1</fileStructureVersion>
+                </primaryVolumeDescriptor>
+            </fileSystem>
+        </fileSystems>
+    </image>
+</isolyzer>
+```
 
 ### Example 2: ISO 9660 image smaller than expected size
 
-    isolyzer iso9660_trunc.iso
+```
+isolyzer iso9660_trunc.iso
+```
 
 Output:
 
-    <?xml version="1.0" ?>
-    <isolyzer>
-        <toolInfo>
-            <toolName>isolyzer</toolName>
-            <toolVersion>1.0.0b3</toolVersion>
-        </toolInfo>
-        <image>
-            <fileInfo>
-                <fileName>iso9660_trunc.iso</fileName>
-                <filePath>/home/johan/isolyzer/testFiles/iso9660_trunc.iso</filePath>
-                <fileSizeInBytes>49157</fileSizeInBytes>
-                <fileLastModified>Fri Jun 30 18:31:33 2017</fileLastModified>
-            </fileInfo>
-            <statusInfo>
-                <success>True</success>
-            </statusInfo>
-            <sectorOffset>0</sectorOffset>
-            <tests>
-                <containsKnownFileSystem>True</containsKnownFileSystem>
-                <sizeExpected>442368</sizeExpected>
-                <sizeActual>49157</sizeActual>
-                <sizeDifference>-393211</sizeDifference>
-                <sizeDifferenceSectors>-192</sizeDifferenceSectors>
-                <sizeAsExpected>False</sizeAsExpected>
-                <smallerThanExpected>True</smallerThanExpected>
-            </tests>
-            <fileSystems>
-                <fileSystem TYPE="ISO 9660">
-                    <primaryVolumeDescriptor>
-                        <typeCode>1</typeCode>
-                        <standardIdentifier>CD001</standardIdentifier>
-                          ::
-                          ::
-                        <fileStructureVersion>1</fileStructureVersion>
-                    </primaryVolumeDescriptor>
-                </fileSystem>
-            </fileSystems>
-        </image>
-    </isolyzer>
+```xml
+<?xml version="1.0" ?>
+<isolyzer>
+    <toolInfo>
+        <toolName>isolyzer</toolName>
+        <toolVersion>1.0.0b3</toolVersion>
+    </toolInfo>
+    <image>
+        <fileInfo>
+            <fileName>iso9660_trunc.iso</fileName>
+            <filePath>/home/johan/isolyzer/testFiles/iso9660_trunc.iso</filePath>
+            <fileSizeInBytes>49157</fileSizeInBytes>
+            <fileLastModified>Fri Jun 30 18:31:33 2017</fileLastModified>
+        </fileInfo>
+        <statusInfo>
+            <success>True</success>
+        </statusInfo>
+        <sectorOffset>0</sectorOffset>
+        <tests>
+            <containsKnownFileSystem>True</containsKnownFileSystem>
+            <sizeExpected>442368</sizeExpected>
+            <sizeActual>49157</sizeActual>
+            <sizeDifference>-393211</sizeDifference>
+            <sizeDifferenceSectors>-192</sizeDifferenceSectors>
+            <sizeAsExpected>False</sizeAsExpected>
+            <smallerThanExpected>True</smallerThanExpected>
+        </tests>
+        <fileSystems>
+            <fileSystem TYPE="ISO 9660">
+                <primaryVolumeDescriptor>
+                    <typeCode>1</typeCode>
+                    <standardIdentifier>CD001</standardIdentifier>
+                        ::
+                        ::
+                    <fileStructureVersion>1</fileStructureVersion>
+                </primaryVolumeDescriptor>
+            </fileSystem>
+        </fileSystems>
+    </image>
+</isolyzer>
+```
 
-
-### Example 3: ISO truncated before Primary Volume Descriptor
-
-    isolyzer iso9660_nopvd.iso
-
-Output:
-
-    <?xml version="1.0" ?>
-    <isolyzer>
-        <toolInfo>
-            <toolName>isolyzer</toolName>
-            <toolVersion>1.0.0b3</toolVersion>
-        </toolInfo>
-        <image>
-            <fileInfo>
-                <fileName>iso9660_nopvd.iso</fileName>
-                <filePath>/home/johan/isolyzer/testFiles/iso9660_nopvd.iso</filePath>
-                <fileSizeInBytes>32860</fileSizeInBytes>
-                <fileLastModified>Fri Jun 30 18:31:33 2017</fileLastModified>
-            </fileInfo>
-            <statusInfo>
-                <success>True</success>
-            </statusInfo>
-            <sectorOffset>0</sectorOffset>
-            <tests>
-                <containsKnownFileSystem>False</containsKnownFileSystem>
-                <sizeExpected>0</sizeExpected>
-                <sizeActual>32860</sizeActual>
-                <sizeDifference>32860</sizeDifference>
-                <sizeDifferenceSectors>16</sizeDifferenceSectors>
-                <sizeAsExpected>False</sizeAsExpected>
-                <smallerThanExpected>False</smallerThanExpected>
-            </tests>
-            <fileSystems/>
-        </image>
-    </isolyzer>
-
-### Example 4: ISO 9660 image from 'enhanced' audio CD (multisession)
+### Example 3: ISO 9660 image from 'enhanced' audio CD (multisession)
 
 First use *cd-info* on the physical carrier to find out the start sector of the data session:
 
-    cd-info
+```
+cd-info
+```
 
 Then look for this bit:
 
-    CD-Plus/Extra
-    session #2 starts at track  8, LSN: 21917, ISO 9660 blocks:  25309
-    ISO 9660: 25309 blocks, label `DISC
+```
+CD-Plus/Extra
+session #2 starts at track  8, LSN: 21917, ISO 9660 blocks:  25309
+ISO 9660: 25309 blocks, label `DISC
+```
 
 So start sector of the data session is 21917. Then:
 
-    isolyzer --offset 21917 multisession.iso
+```
+isolyzer --offset 21917 multisession.iso
+```
 
 Output:
 
-    <?xml version="1.0" ?>
-    <isolyzer>
-        <toolInfo>
-            <toolName>isolyzer</toolName>
-            <toolVersion>1.0.0b3</toolVersion>
-        </toolInfo>
-        <image>
-            <fileInfo>
-                <fileName>multisession.iso</fileName>
-                <filePath>/home/johan/isolyzer/testFiles/multisession.iso</filePath>
-                <fileSizeInBytes>6950912</fileSizeInBytes>
-                <fileLastModified>Wed Apr 19 14:39:27 2017</fileLastModified>
-            </fileInfo>
-            <statusInfo>
-                <success>True</success>
-            </statusInfo>
-            <sectorOffset>21917</sectorOffset>
-            <tests>
-                <containsKnownFileSystem>True</containsKnownFileSystem>
-                <sizeExpected>6946816</sizeExpected>
-                <sizeActual>6950912</sizeActual>
-                <sizeDifference>4096</sizeDifference>
-                <sizeDifferenceSectors>2</sizeDifferenceSectors>
-                <sizeAsExpected>False</sizeAsExpected>
-                <smallerThanExpected>False</smallerThanExpected>
-            </tests>
-            <fileSystems>
-                <fileSystem TYPE="ISO 9660">
-                    <primaryVolumeDescriptor>
-                        <typeCode>1</typeCode>
-                        <standardIdentifier>CD001</standardIdentifier>
-                          :: 
-                          ::
-                        <fileStructureVersion>1</fileStructureVersion>
-                    </primaryVolumeDescriptor>
-                </fileSystem>
-            </fileSystems>
-        </image>
-    </isolyzer>
+```xml
+<?xml version="1.0" ?>
+<isolyzer>
+    <toolInfo>
+        <toolName>isolyzer</toolName>
+        <toolVersion>1.0.0b3</toolVersion>
+    </toolInfo>
+    <image>
+        <fileInfo>
+            <fileName>multisession.iso</fileName>
+            <filePath>/home/johan/isolyzer/testFiles/multisession.iso</filePath>
+            <fileSizeInBytes>6950912</fileSizeInBytes>
+            <fileLastModified>Wed Apr 19 14:39:27 2017</fileLastModified>
+        </fileInfo>
+        <statusInfo>
+            <success>True</success>
+        </statusInfo>
+        <sectorOffset>21917</sectorOffset>
+        <tests>
+            <containsKnownFileSystem>True</containsKnownFileSystem>
+            <sizeExpected>6946816</sizeExpected>
+            <sizeActual>6950912</sizeActual>
+            <sizeDifference>4096</sizeDifference>
+            <sizeDifferenceSectors>2</sizeDifferenceSectors>
+            <sizeAsExpected>False</sizeAsExpected>
+            <smallerThanExpected>False</smallerThanExpected>
+        </tests>
+        <fileSystems>
+            <fileSystem TYPE="ISO 9660">
+                <primaryVolumeDescriptor>
+                    <typeCode>1</typeCode>
+                    <standardIdentifier>CD001</standardIdentifier>
+                        :: 
+                        ::
+                    <fileStructureVersion>1</fileStructureVersion>
+                </primaryVolumeDescriptor>
+            </fileSystem>
+        </fileSystems>
+    </image>
+</isolyzer>
+```
 
-### Example 5: UDF image
+### Example 4: Hybrid ISO 9660 /UDF /  image
 
-    isolyzer udf.iso
-
-Output:
-
-    <?xml version="1.0" ?>
-    <isolyzer>
-        <toolInfo>
-            <toolName>isolyzer</toolName>
-            <toolVersion>1.0.0b3</toolVersion>
-        </toolInfo>
-        <image>
-            <fileInfo>
-                <fileName>udf.iso</fileName>
-                <filePath>/home/johan/isolyzer/testFiles/udf.iso</filePath>
-                <fileSizeInBytes>614400</fileSizeInBytes>
-                <fileLastModified>Fri Jun 30 18:31:33 2017</fileLastModified>
-            </fileInfo>
-            <statusInfo>
-                <success>True</success>
-            </statusInfo>
-            <sectorOffset>0</sectorOffset>
-            <tests>
-                <containsKnownFileSystem>True</containsKnownFileSystem>
-                <sizeExpected>579584</sizeExpected>
-                <sizeActual>614400</sizeActual>
-                <sizeDifference>34816</sizeDifference>
-                <sizeDifferenceSectors>17</sizeDifferenceSectors>
-                <sizeAsExpected>False</sizeAsExpected>
-                <smallerThanExpected>False</smallerThanExpected>
-            </tests>
-            <fileSystems>
-                <fileSystem TYPE="UDF">
-                    <logicalVolumeDescriptor>
-                        <tagIdentifier>6</tagIdentifier>
-                        <descriptorVersion>3</descriptorVersion>
-                        <tagSerialNumber>1</tagSerialNumber>
-                        <volumeSequenceNumber>2</volumeSequenceNumber>
-                        <logicalVolumeIdentifier>LinuxUDF</logicalVolumeIdentifier>
-                        <logicalBlockSize>2048</logicalBlockSize>
-                        <domainIdentifier>*OSTA UDF Compliant</domainIdentifier>
-                        <mapTableLength>6</mapTableLength>
-                        <numberOfPartitionMaps>1</numberOfPartitionMaps>
-                        <implementationIdentifier>*Linux UDFFS</implementationIdentifier>
-                        <integritySequenceExtentLength>2048</integritySequenceExtentLength>
-                        <integritySequenceExtentLocation>273</integritySequenceExtentLocation>
-                    </logicalVolumeDescriptor>
-                    <logicalVolumeIntegrityDescriptor>
-                        <tagIdentifier>9</tagIdentifier>
-                        <descriptorVersion>3</descriptorVersion>
-                        <tagSerialNumber>1</tagSerialNumber>
-                        <timeStamp>2017/06/30, 18:31:33</timeStamp>
-                        <integrityType>1</integrityType>
-                        <numberOfPartitions>1</numberOfPartitions>
-                        <lengthOfImplementationUse>46</lengthOfImplementationUse>
-                        <freeSpaceTable>4</freeSpaceTable>
-                        <sizeTable>9</sizeTable>
-                    </logicalVolumeIntegrityDescriptor>
-                    <partitionDescriptor>
-                        <tagIdentifier>5</tagIdentifier>
-                        <descriptorVersion>3</descriptorVersion>
-                        <tagSerialNumber>1</tagSerialNumber>
-                        <volumeDescriptorSequenceNumber>5</volumeDescriptorSequenceNumber>
-                        <partitionNumber>0</partitionNumber>
-                        <accessType>1</accessType>
-                        <partitionStartingLocation>274</partitionStartingLocation>
-                        <partitionLength>9</partitionLength>
-                    </partitionDescriptor>
-                </fileSystem>
-            </fileSystems>
-        </image>
-    </isolyzer>
-
-### Example 6: HFS+ image
-
-    isolyzer hfsplus.iso
+```
+isolyzer iso9660_udf_hfs.iso
+```
 
 Output:
 
-    <?xml version="1.0" ?>
-    <isolyzer>
-        <toolInfo>
-            <toolName>isolyzer</toolName>
-            <toolVersion>1.0.0b3</toolVersion>
-        </toolInfo>
-        <image>
-            <fileInfo>
-                <fileName>hfsplus.iso</fileName>
-                <filePath>/home/johan/isolyzer/testFiles/hfsplus.iso</filePath>
-                <fileSizeInBytes>614400</fileSizeInBytes>
-                <fileLastModified>Fri Jun 30 18:31:33 2017</fileLastModified>
-            </fileInfo>
-            <statusInfo>
-                <success>True</success>
-            </statusInfo>
-            <sectorOffset>0</sectorOffset>
-            <tests>
-                <containsKnownFileSystem>True</containsKnownFileSystem>
-                <sizeExpected>614400</sizeExpected>
-                <sizeActual>614400</sizeActual>
-                <sizeDifference>0</sizeDifference>
-                <sizeDifferenceSectors>0</sizeDifferenceSectors>
-                <sizeAsExpected>True</sizeAsExpected>
-                <smallerThanExpected>False</smallerThanExpected>
-            </tests>
-            <fileSystems>
-                <fileSystem TYPE="HFS+">
-                    <hfsPlusVolumeheader>
-                        <signature>H+</signature>
-                        <version>4</version>
-                        <blockSize>2048</blockSize>
-                        <blockCount>300</blockCount>
-                    </hfsPlusVolumeheader>
-                </fileSystem>
-            </fileSystems>
-        </image>
-    </isolyzer>
-
-### Example 7: Hybrid ISO 9660 /UDF image
-
-    isolyzer iso9660_udf.iso
-
-Output:
-
-    <?xml version="1.0" ?>
-    <isolyzer>
-        <toolInfo>
-            <toolName>isolyzer</toolName>
-            <toolVersion>1.0.0b3</toolVersion>
-        </toolInfo>
-        <image>
-            <fileInfo>
-                <fileName>iso9660_udf.iso</fileName>
-                <filePath>/home/johan/isolyzer/testFiles/iso9660_udf.iso</filePath>
-                <fileSizeInBytes>942080</fileSizeInBytes>
-                <fileLastModified>Fri Jun 30 18:31:33 2017</fileLastModified>
-            </fileInfo>
-            <statusInfo>
-                <success>True</success>
-            </statusInfo>
-            <sectorOffset>0</sectorOffset>
-            <tests>
-                <containsKnownFileSystem>True</containsKnownFileSystem>
-                <sizeExpected>942080</sizeExpected>
-                <sizeActual>942080</sizeActual>
-                <sizeDifference>0</sizeDifference>
-                <sizeDifferenceSectors>0</sizeDifferenceSectors>
-                <sizeAsExpected>True</sizeAsExpected>
-                <smallerThanExpected>False</smallerThanExpected>
-            </tests>
-            <fileSystems>
-                <fileSystem TYPE="ISO 9660">
-                    <primaryVolumeDescriptor>
-                        <typeCode>1</typeCode>
-                        <standardIdentifier>CD001</standardIdentifier>
-                        <version>1</version>
-                        <systemIdentifier>LINUX</systemIdentifier>
-                        <volumeIdentifier>UDF Bridge demo</volumeIdentifier>
-                        <volumeSpaceSize>460</volumeSpaceSize>
-                        <volumeSetSize>1</volumeSetSize>
-                        <volumeSequenceNumber>1</volumeSequenceNumber>
-                        <logicalBlockSize>2048</logicalBlockSize>
-                        <pathTableSize>10</pathTableSize>
-                        <typeLPathTableLocation>263</typeLPathTableLocation>
-                        <optionalTypeLPathTableLocation>0</optionalTypeLPathTableLocation>
-                        <typeMPathTableLocation>265</typeMPathTableLocation>
-                        <optionalTypeMPathTableLocation>0</optionalTypeMPathTableLocation>
-                        <volumeSetIdentifier/>
-                        <publisherIdentifier/>
-                        <dataPreparerIdentifier/>
-                        <applicationIdentifier>MKISOFS ISO9660/HFS/UDF FILESYSTEM BUILDER &amp; CDRECORD CD/DVD/BluRay CREATOR (C) 1993 E.YOUNGDALE (C) 1997 J.PEARSON/J.SCHILLING</applicationIdentifier>
-                        <copyrightFileIdentifier/>
-                        <abstractFileIdentifier/>
-                        <bibliographicFileIdentifier/>
-                        <volumeCreationDateAndTime>2017/06/30, 18:31:33</volumeCreationDateAndTime>
-                        <volumeModificationDateAndTime>2017/06/30, 18:31:33</volumeModificationDateAndTime>
-                        <volumeExpirationDateAndTime>0/00/00, 00:00:00</volumeExpirationDateAndTime>
-                        <volumeEffectiveDateAndTime>2017/06/30, 18:31:33</volumeEffectiveDateAndTime>
-                        <fileStructureVersion>1</fileStructureVersion>
-                    </primaryVolumeDescriptor>
-                </fileSystem>
-                <fileSystem TYPE="UDF">
-                    <partitionDescriptor>
-                        <tagIdentifier>5</tagIdentifier>
-                        <descriptorVersion>2</descriptorVersion>
-                        <tagSerialNumber>0</tagSerialNumber>
-                        <volumeDescriptorSequenceNumber>2</volumeDescriptorSequenceNumber>
-                        <partitionNumber>0</partitionNumber>
-                        <accessType>1</accessType>
-                        <partitionStartingLocation>257</partitionStartingLocation>
-                        <partitionLength>53</partitionLength>
-                    </partitionDescriptor>
-                    <logicalVolumeDescriptor>
-                        <tagIdentifier>6</tagIdentifier>
-                        <descriptorVersion>2</descriptorVersion>
-                        <tagSerialNumber>0</tagSerialNumber>
-                        <volumeSequenceNumber>3</volumeSequenceNumber>
-                        <logicalVolumeIdentifier>UDF Bridge demo</logicalVolumeIdentifier>
-                        <logicalBlockSize>2048</logicalBlockSize>
-                        <domainIdentifier>*OSTA UDF Compliant</domainIdentifier>
-                        <mapTableLength>6</mapTableLength>
-                        <numberOfPartitionMaps>1</numberOfPartitionMaps>
-                        <implementationIdentifier>*mkisofs</implementationIdentifier>
-                        <integritySequenceExtentLength>4096</integritySequenceExtentLength>
-                        <integritySequenceExtentLocation>64</integritySequenceExtentLocation>
-                    </logicalVolumeDescriptor>
-                    <logicalVolumeIntegrityDescriptor>
-                        <tagIdentifier>9</tagIdentifier>
-                        <descriptorVersion>2</descriptorVersion>
-                        <tagSerialNumber>0</tagSerialNumber>
-                        <timeStamp>2017/06/30, 18:31:33</timeStamp>
-                        <integrityType>1</integrityType>
-                        <numberOfPartitions>1</numberOfPartitions>
-                        <lengthOfImplementationUse>46</lengthOfImplementationUse>
-                        <freeSpaceTable>0</freeSpaceTable>
-                        <sizeTable>53</sizeTable>
-                    </logicalVolumeIntegrityDescriptor>
-                </fileSystem>
-            </fileSystems>
-        </image>
-    </isolyzer>
-
+```xml
+<?xml version="1.0" ?>
+<isolyzer>
+    <toolInfo>
+        <toolName>isolyzer</toolName>
+        <toolVersion>1.4.0a1</toolVersion>
+    </toolInfo>
+    <image>
+        <fileInfo>
+            <fileName>iso9660_udf_hfs.iso</fileName>
+            <filePath>/home/johan/isolyzer/testFiles/iso9660_udf_hfs.iso</filePath>
+            <fileSizeInBytes>1212416</fileSizeInBytes>
+            <fileLastModified>Thu Apr  7 20:31:13 2022</fileLastModified>
+        </fileInfo>
+        <statusInfo>
+            <success>True</success>
+        </statusInfo>
+        <sectorOffset>0</sectorOffset>
+        <tests>
+            <containsKnownFileSystem>True</containsKnownFileSystem>
+            <sizeExpected>1212416</sizeExpected>
+            <sizeActual>1212416</sizeActual>
+            <sizeDifference>0</sizeDifference>
+            <sizeDifferenceSectors>0.0</sizeDifferenceSectors>
+            <sizeAsExpected>True</sizeAsExpected>
+            <smallerThanExpected>False</smallerThanExpected>
+        </tests>
+        <fileSystems>
+            <fileSystem TYPE="ISO 9660">
+                <primaryVolumeDescriptor>
+                    <typeCode>1</typeCode>
+                    <standardIdentifier>CD001</standardIdentifier>
+                    <version>1</version>
+                        :: 
+                        ::
+                </primaryVolumeDescriptor>
+            </fileSystem>
+            <fileSystem TYPE="HFS">
+                <appleZeroBlock>
+                    <signature>ER</signature>
+                    <blockSize>512</blockSize>
+                    <blockCount>1764</blockCount>
+                    <deviceType>1</deviceType>
+                    <deviceID>1</deviceID>
+                    <driverData>1149173760</driverData>
+                    <driverDescriptorCount>0</driverDescriptorCount>
+                    <driverDescriptorBlockStart>0</driverDescriptorBlockStart>
+                    <driverDescriptorBlockCount>0</driverDescriptorBlockCount>
+                    <driverDescriptorSystemType>0</driverDescriptorSystemType>
+                </appleZeroBlock>
+                <applePartitionMap>
+                    <signature>PM</signature>
+                    <numberOfPartitionEntries>2</numberOfPartitionEntries>
+                    <partitionBlockStart>1</partitionBlockStart>
+                    <partitionBlockCount>2</partitionBlockCount>
+                    <partitionName>Apple</partitionName>
+                    <partitionType>Apple_partition_map</partitionType>
+                        :: 
+                        ::
+                </applePartitionMap>
+                <applePartitionMap>
+                    <signature>PM</signature>
+                    <numberOfPartitionEntries>2</numberOfPartitionEntries>
+                    <partitionBlockStart>16</partitionBlockStart>
+                    <partitionBlockCount>1748</partitionBlockCount>
+                    <partitionName>UDF Bridge</partitionName>
+                    <partitionType>Apple_HFS</partitionType>
+                        :: 
+                        ::
+                </applePartitionMap>
+                <masterDirectoryBlock>
+                    <signature>BD</signature>
+                    <blockCount>436</blockCount>
+                    <blockSize>2048</blockSize>
+                    <volumeName>UDF Bridge</volumeName>
+                </masterDirectoryBlock>
+            </fileSystem>
+            <fileSystem TYPE="UDF">
+                <partitionDescriptor>
+                    <tagIdentifier>5</tagIdentifier>
+                    <descriptorVersion>2</descriptorVersion>
+                        :: 
+                        ::
+                </partitionDescriptor>
+                <logicalVolumeDescriptor>
+                    <tagIdentifier>6</tagIdentifier>
+                    <descriptorVersion>2</descriptorVersion>
+                    <tagSerialNumber>0</tagSerialNumber>
+                        :: 
+                        ::
+                </logicalVolumeDescriptor>
+                <logicalVolumeIntegrityDescriptor>
+                    <tagIdentifier>9</tagIdentifier>
+                    <descriptorVersion>2</descriptorVersion>
+                    <tagSerialNumber>0</tagSerialNumber>
+                        :: 
+                        ::
+                </logicalVolumeIntegrityDescriptor>
+            </fileSystem>
+        </fileSystems>
+    </image>
+</isolyzer>
+```
 
 ## Further resources
 
 The Isolyzer code is largely based on the following documentation and resources:
 
 * <http://wiki.osdev.org/ISO_9660> - explanation of the ISO 9660 filesystem
+* <https://web.archive.org/web/20220111023846/https://www.os2museum.com/files/docs/cdrom/CDROM_Working_Paper-1986.pdf> - Working Paper for a Standard CDROM Volume and File Structure (High Sierra specification)
 * <https://github.com/libyal/libfshfs/blob/master/documentation/Hierarchical%20File%20System%20(HFS).asciidoc> - good explanation of HFS and HFS+ file systems
 * <https://opensource.apple.com/source/IOStorageFamily/IOStorageFamily-116/IOApplePartitionScheme.h> - Apple's code with Apple partitions and zero block definitions
 * <https://en.wikipedia.org/wiki/Apple_Partition_Map#Layout> - overview of Apple partition map

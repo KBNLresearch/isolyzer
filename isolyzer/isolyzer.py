@@ -665,6 +665,8 @@ def processImage(image, offset):
             # Not entirely sure why (padding bytes?)
         
         if parsedSFSVolumeDescriptor:
+            # Calculate from Standard File Structure Volume Descriptor
+            # in case of HSF file system; calculation is identical to ISO 9660 case
             sizeExpectedSFSVD = (sfsvdInfo.find('volumeSpaceSize').text - offset) * \
                 sfsvdInfo.find('logicalBlockSize').text
 
