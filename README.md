@@ -5,7 +5,7 @@
 *Isolyzer* verifies if the file size of a CD / DVD image ("ISO image") is consistent with the information in its filesystem-level headers. The following file systems are supported:
 
 * [ISO 9660](https://en.wikipedia.org/wiki/ISO_9660)
-* [High Sierra](https://web.archive.org/web/20220111023846/https://www.os2museum.com/files/docs/cdrom/CDROM_Working_Paper-1986.pdf)
+* [High Sierra](https://web.archive.org/web/20220111023846/https://www.os2museum.com/files/docs/cdrom/CDROM_Working_Paper-1986.pdf) (supported in isolyzer 1.4.0 and onward)
 * [Universal Disk Format](https://en.wikipedia.org/wiki/Universal_Disk_Format) (UDF)
 * Apple [Hierarchical File System](https://en.wikipedia.org/wiki/Hierarchical_File_System) (HFS)
 * Apple [HFS+](https://en.wikipedia.org/wiki/HFS_Plus)
