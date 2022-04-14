@@ -45,6 +45,7 @@ if len(scriptName) == 0:
     scriptName = 'isolyzer'
 
 __version__ = '1.4.0a2'
+nsString = 'http://kb.nl/ns/isolyzer/'
 
 # Create parser
 parser = argparse.ArgumentParser(
@@ -771,7 +772,7 @@ def processImages(images, offset):
     Process list of images
     """
     # Create output element
-    root = ET.Element("isolyzer")
+    root = ET.Element("isolyzer", {'xmlns': nsString})
 
     # Add some info on isolyzer and the version used
     toolInfo = ET.Element('toolInfo')
