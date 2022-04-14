@@ -28,19 +28,19 @@ def decDateTimeToDate(datetime):
 
 def getVolumeDescriptor(bytesData, byteStart):
 
-    """Read one 2048-byte ISO volume descriptor and return its descriptor
+    """Read one 2048-byte HSF volume descriptor and return its descriptor
     code and contents
     """
     byteEnd = byteStart + 2048
-    volumeDescriptorType = bc.bytesToUnsignedChar(bytesData[byteStart:byteStart+1])
+    volumeDescriptorType = bc.bytesToUnsignedChar(bytesData[byteStart+8:byteStart+9])
     volumeDescriptorData = bytesData[byteStart:byteEnd]
 
     return(volumeDescriptorType, volumeDescriptorData, byteEnd)
 
 
-def parseStandardFileStructureVolumeDescriptor(bytesData):
+def parseSFSVolumeDescriptor(bytesData):
 
-    """Parse Standard FileStructure Volume Descriptor
+    """Parse Standard File Structure Volume Descriptor
     and return extracted properties
     """
 

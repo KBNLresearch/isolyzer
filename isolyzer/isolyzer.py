@@ -263,6 +263,7 @@ def processImage(image, offset):
         containsAppleFS = False
         containsApplePartitionMap = False
         parsedAppleZeroBlock = False
+        containsUDF = False
         appleBlockSize = 512
 
         # Contents of file to memory map object
@@ -443,11 +444,14 @@ def processImage(image, offset):
         # This is a dummy value
         volumeDescriptorType = -1
 
-        # Count volume descriptors
+        # Count volume descriptors (ISO + High Sierra)
         noISOVolumeDescriptors = 0
+        noHSFVolumeDescriptors = 0
 
-        # Default value
+        # Flag that indicates primary volume descriptor (ISO) / Standard File Structure Volume
+        # Descriptor (High Sierra) was parsed
         parsedPrimaryVolumeDescriptor = False
+        parsedSFSVolumeDescriptor = False
 
         # Skip to byte 32768, which is where actual ISO 9660/HSF fields start
         byteStart = 32768
@@ -480,21 +484,6 @@ def processImage(image, offset):
                     # str(parsedPrimaryVolumeDescriptor))
                 byteStart = byteEnd
 
-        # Read through extended (UDF) volume descriptors (if present)
-
-        noExtendedVolumeDescriptors = 0
-        volumeDescriptorIdentifier = "CD001"
-
-        while volumeDescriptorIdentifier in ["CD001", "BEA01", "NSR02", "NSR03", "BOOT2", "TEA01"]:
-            volumeDescriptorIdentifier, volumeDescriptorData, byteEnd = \
-                udf.getExtendedVolumeDescriptor(isoBytes, byteStart)
-            if volumeDescriptorIdentifier in ["BEA01", "NSR02", "NSR03", "BOOT2", "TEA01"]:
-                noExtendedVolumeDescriptors += 1
-
-            byteStart = byteEnd
-
-        containsUDF = noExtendedVolumeDescriptors > 0
-
         if containsHSFSignature:
 
             # Create element to store properties of High Sierra filesystem
@@ -507,21 +496,37 @@ def processImage(image, offset):
 
                 volumeDescriptorType, volumeDescriptorData, byteEnd = \
                     hsf.getVolumeDescriptor(isoBytes, byteStart)
-                noISOVolumeDescriptors += 1
+                
+                noHSFVolumeDescriptors += 1
+                sys.stderr.write(str(volumeDescriptorType))
 
                 if volumeDescriptorType == 1:
-                    # Get info from Primary Volume Descriptor (as element object)
+                    # Get info from Standard File Structure Volume Descriptor (as element object)
                     try:
-                        pvdInfo = iso.parsePrimaryVolumeDescriptor(volumeDescriptorData)
-                        fsHSF.append(pvdInfo)
-                        parsedPrimaryVolumeDescriptor = True
+                        sfsvdInfo = hsf.parseSFSVolumeDescriptor(volumeDescriptorData)
+                        fsHSF.append(sfsvdInfo)
+                        parsedSFSVolumeDescriptor = True
                     except Exception:
-                        parsedPrimaryVolumeDescriptor = False
+                        parsedSFSVolumeDescriptor = False
                         # raise
 
                     # shared.addProperty(tests, "parsedPrimaryVolumeDescriptor", \
                     # str(parsedPrimaryVolumeDescriptor))
                 byteStart = byteEnd
+
+        # Read through extended (UDF) volume descriptors (if present)
+        noExtendedVolumeDescriptors = 0
+        volumeDescriptorIdentifier = "CD001"
+
+        while volumeDescriptorIdentifier in ["CD001", "BEA01", "NSR02", "NSR03", "BOOT2", "TEA01"]:
+            volumeDescriptorIdentifier, volumeDescriptorData, byteEnd = \
+                udf.getExtendedVolumeDescriptor(isoBytes, byteStart)
+            if volumeDescriptorIdentifier in ["BEA01", "NSR02", "NSR03", "BOOT2", "TEA01"]:
+                noExtendedVolumeDescriptors += 1
+
+            byteStart = byteEnd
+
+        containsUDF = noExtendedVolumeDescriptors > 0
 
         if containsUDF:
 
@@ -639,6 +644,7 @@ def processImage(image, offset):
 
         # Intialise all estimates at 0
         sizeExpectedPVD = 0
+        sizeExpectedSFSVD = 0
         sizeExpectedZeroBlock = 0
         sizeExpectedMDB = 0
         sizeExpectedHFSPlus = 0
@@ -657,6 +663,9 @@ def processImage(image, offset):
             # Volume Descriptors are ALWAYS multiples of 2048 bytes!). Also, even for
             # non-hybrid FS actual size is sometimes slightly larger than expected size.
             # Not entirely sure why (padding bytes?)
+        
+        if parsedSFSVolumeDescriptor:
+            sizeExpectedSFSVD = 0
 
         if containsApplePartitionMap and parsedAppleZeroBlock:
             # Calculate from zero block in Apple partition
