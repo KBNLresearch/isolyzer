@@ -498,7 +498,6 @@ def processImage(image, offset):
                     hsf.getVolumeDescriptor(isoBytes, byteStart)
                 
                 noHSFVolumeDescriptors += 1
-                sys.stderr.write(str(volumeDescriptorType))
 
                 if volumeDescriptorType == 1:
                     # Get info from Standard File Structure Volume Descriptor (as element object)
@@ -639,8 +638,9 @@ def processImage(image, offset):
 
         shared.addProperty(tests, "containsKnownFileSystem", str(containsKnownFileSystem))
 
-        # Expected ISO size (bytes) can now be calculated from 5 different places:
-        # PVD, Zero Block, Master Directory Block, HFS Plus header or UDF descriptors
+        # Expected ISO size (bytes) can now be calculated from 6 different places:
+        # PVD, High Sierra SFSVolumeDescriptor, Zero Block, Master Directory Block,
+        # HFS Plus header or UDF descriptors
 
         # Intialise all estimates at 0
         sizeExpectedPVD = 0
@@ -665,7 +665,8 @@ def processImage(image, offset):
             # Not entirely sure why (padding bytes?)
         
         if parsedSFSVolumeDescriptor:
-            sizeExpectedSFSVD = 0
+            sizeExpectedSFSVD = (sfsvdInfo.find('volumeSpaceSize').text - offset) * \
+                sfsvdInfo.find('logicalBlockSize').text
 
         if containsApplePartitionMap and parsedAppleZeroBlock:
             # Calculate from zero block in Apple partition
@@ -701,6 +702,7 @@ def processImage(image, offset):
 
         # Assuming here that best estimate is largest out of the above values
         sizeExpected = max([sizeExpectedPVD,
+                            sizeExpectedSFSVD,
                             sizeExpectedZeroBlock,
                             sizeExpectedMDB,
                             sizeExpectedHFSPlus,
