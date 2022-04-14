@@ -41,81 +41,84 @@ def getVolumeDescriptor(bytesData, byteStart):
 def parseSFSVolumeDescriptor(bytesData):
 
     """Parse Standard File Structure Volume Descriptor
-    and return extracted properties
+    and return extracted properties. Based on section
+    11.4 in:
+    https://www.os2museum.com/files/docs/cdrom/CDROM_Working_Paper-1986.pdf
+
+    For fields that are stored as both little-endian and big-endian, only
+    big-endian values are read here!
     """
 
     # Set up elemement object to store extracted properties
     properties = ET.Element("standardFileStructureVolumeDescriptor")
 
-    shared.addProperty(properties, "typeCode",
-                       bc.bytesToUnsignedChar(bytesData[0:1]))
-    shared.addProperty(properties, "standardIdentifier",
-                       bc.bytesToText(bytesData[1:6]))
-    shared.addProperty(properties, "version",
-                       bc.bytesToUnsignedChar(bytesData[6:7]))
+    shared.addProperty(properties, "volumeDescriptorLBN",
+                       bc.bytesToUInt(bytesData[4:8]))
+    shared.addProperty(properties, "volumeDescriptorType",
+                       bc.bytesToUnsignedChar(bytesData[8:9]))
+    shared.addProperty(properties, "volumeStructureStandardIdentifier",
+                       bc.bytesToText(bytesData[9:14]))
+    shared.addProperty(properties, "volumeStructureStandardVersion",
+                       bc.bytesToUnsignedChar(bytesData[14:15]))
     shared.addProperty(properties, "systemIdentifier",
-                       bc.bytesToText(bytesData[8:40]))
+                       bc.bytesToText(bytesData[16:48]))
     shared.addProperty(properties, "volumeIdentifier",
-                       bc.bytesToText(bytesData[40:72]))
-
-    # Fields below are stored as both little-endian and big-endian; only
-    # big-endian values read here!
-
-    # Number of Logical Blocks in which the volume is recorded
+                       bc.bytesToText(bytesData[48:80]))
     shared.addProperty(properties, "volumeSpaceSize",
-                       bc.bytesToUInt(bytesData[84:88]))
-    # The size of the set in this logical volume (number of disks)
+                       bc.bytesToUInt(bytesData[92:96]))
     shared.addProperty(properties, "volumeSetSize",
-                       bc.bytesToUShortInt(bytesData[122:124]))
-    # The number of this disk in the Volume Set
-    shared.addProperty(properties, "volumeSequenceNumber",
-                       bc.bytesToUShortInt(bytesData[126:128]))
-    # The size in bytes of a logical block
-    shared.addProperty(properties, "logicalBlockSize",
                        bc.bytesToUShortInt(bytesData[130:132]))
-    # The size in bytes of the path table
+    shared.addProperty(properties, "volumeSetSequenceNumber",
+                       bc.bytesToUShortInt(bytesData[134:136]))
+    shared.addProperty(properties, "logicalBlockSize",
+                       bc.bytesToUShortInt(bytesData[138:140]))
     shared.addProperty(properties, "pathTableSize",
-                       bc.bytesToUInt(bytesData[136:140]))
-    # Location of Type-L Path Table (note this is stored as little-endian only, hence
-    # byte swap!)
-    shared.addProperty(properties, "typeLPathTableLocation",
-                       bc.swap32(bc.bytesToUInt(bytesData[140:144])))
-    # Location of Optional Type-L Path Table
-    shared.addProperty(properties, "optionalTypeLPathTableLocation",
-                       bc.swap32(bc.bytesToUInt(bytesData[144:148])))
-    # Location of Type-M Path Table
-    shared.addProperty(properties, "typeMPathTableLocation",
-                       bc.bytesToUInt(bytesData[148:152]))
-    # Location of Optional Type-M Path Table
-    shared.addProperty(properties, "optionalTypeMPathTableLocation",
-                       bc.bytesToUInt(bytesData[152:156]))
+                       bc.bytesToUInt(bytesData[144:148]))
+
+    # Following fields are stored as little-endian only, hence
+    # byte swap
+    shared.addProperty(properties, "firstMandatoryPathTableLocation",
+                       bc.swap32(bc.bytesToUInt(bytesData[148:152])))
+    shared.addProperty(properties, "optionalPathTableLocation",
+                       bc.swap32(bc.bytesToUInt(bytesData[152:156])))
+    shared.addProperty(properties, "optionalPathTableLocation",
+                       bc.swap32(bc.bytesToUInt(bytesData[156:160])))
+    shared.addProperty(properties, "optionalPathTableLocation",
+                       bc.swap32(bc.bytesToUInt(bytesData[160:164])))
+    shared.addProperty(properties, "secondMandatoryPathTableLocation",
+                       bc.swap32(bc.bytesToUInt(bytesData[164:168])))
+    shared.addProperty(properties, "optionalPathTableLocation",
+                       bc.swap32(bc.bytesToUInt(bytesData[168:172])))
+    shared.addProperty(properties, "optionalPathTableLocation",
+                       bc.swap32(bc.bytesToUInt(bytesData[172:176])))
+    shared.addProperty(properties, "optionalPathTableLocation",
+                       bc.swap32(bc.bytesToUInt(bytesData[176:180])))
 
     # Following fields are all text strings
     shared.addProperty(properties, "volumeSetIdentifier",
-                       bc.bytesToText(bytesData[190:318]))
+                       bc.bytesToText(bytesData[214:342]))
     shared.addProperty(properties, "publisherIdentifier",
-                       bc.bytesToText(bytesData[318:446]))
+                       bc.bytesToText(bytesData[342:470]))
     shared.addProperty(properties, "dataPreparerIdentifier",
-                       bc.bytesToText(bytesData[446:574]))
+                       bc.bytesToText(bytesData[470:598]))
     shared.addProperty(properties, "applicationIdentifier",
-                       bc.bytesToText(bytesData[574:702]))
+                       bc.bytesToText(bytesData[598:726]))
     shared.addProperty(properties, "copyrightFileIdentifier",
-                       bc.bytesToText(bytesData[702:740]))
+                       bc.bytesToText(bytesData[726:758]))
     shared.addProperty(properties, "abstractFileIdentifier",
-                       bc.bytesToText(bytesData[740:776]))
-    shared.addProperty(properties, "bibliographicFileIdentifier",
-                       bc.bytesToText(bytesData[776:813]))
+                       bc.bytesToText(bytesData[758:790]))
 
     # Following fields are all date-time values
     shared.addProperty(properties, "volumeCreationDateAndTime",
-                       decDateTimeToDate(bytesData[813:830]))
+                       decDateTimeToDate(bytesData[790:806]))
     shared.addProperty(properties, "volumeModificationDateAndTime",
-                       decDateTimeToDate(bytesData[830:847]))
+                       decDateTimeToDate(bytesData[806:822]))
     shared.addProperty(properties, "volumeExpirationDateAndTime",
-                       decDateTimeToDate(bytesData[847:864]))
+                       decDateTimeToDate(bytesData[822:838]))
     shared.addProperty(properties, "volumeEffectiveDateAndTime",
-                       decDateTimeToDate(bytesData[864:881]))
-    shared.addProperty(properties, "fileStructureVersion",
-                       bc.bytesToUnsignedChar(bytesData[881:882]))
+                       decDateTimeToDate(bytesData[838:854]))
+
+    shared.addProperty(properties, "fileStructureStandardVersion",
+                       bc.bytesToUnsignedChar(bytesData[854:855]))
 
     return properties
