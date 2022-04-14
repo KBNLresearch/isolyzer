@@ -31,6 +31,7 @@ import argparse
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 from . import iso9660 as iso
+from . import hsf as hsf
 from . import udf as udf
 from . import apple as apple
 from . import byteconv as bc
@@ -267,9 +268,12 @@ def processImage(image, offset):
         # Contents of file to memory map object
         isoBytes = fileToMemoryMap(image)
 
-        # Does image match byte signature for an ISO 9660 image?
+        # Does image match byte signature for an ISO 9660 file system?
         containsISO9660Signature = isoBytes[32769:32774] == b'CD001' \
             and isoBytes[34817:34822] == b'CD001'
+
+        # Does image match byte signature for a High Sierra file system?
+        containsHSFSignature = isoBytes[32777:32782] == b'CDROM'
       
         # Does image contain Apple Zero Block?
         containsAppleZeroBlock = isoBytes[0:2] == b'\x45\x52'
@@ -445,7 +449,7 @@ def processImage(image, offset):
         # Default value
         parsedPrimaryVolumeDescriptor = False
 
-        # Skip to byte 32768, which is where actual ISO 9660 fields start
+        # Skip to byte 32768, which is where actual ISO 9660/HSF fields start
         byteStart = 32768
 
         if containsISO9660Signature:
@@ -490,6 +494,47 @@ def processImage(image, offset):
             byteStart = byteEnd
 
         containsUDF = noExtendedVolumeDescriptors > 0
+
+        if containsHSFSignature:
+
+            # Create element to store properties of High Sierra filesystem
+            fsHSF = ET.Element("fileSystem")
+
+            # Read through all 2048-byte volume descriptors, until Volume Descriptor
+            # Set Terminator is found (or unexpected EOF, which will result in -9999
+            # value for volumeDescriptorType)
+            while volumeDescriptorType != 255 and volumeDescriptorType != -9999:
+
+                volumeDescriptorType, volumeDescriptorData, byteEnd = \
+                    hsf.getVolumeDescriptor(isoBytes, byteStart)
+                noISOVolumeDescriptors += 1
+
+                if volumeDescriptorType == 1:
+                    # Get info from Primary Volume Descriptor (as element object)
+                    try:
+                        pvdInfo = iso.parsePrimaryVolumeDescriptor(volumeDescriptorData)
+                        fsHSF.append(pvdInfo)
+                        parsedPrimaryVolumeDescriptor = True
+                    except Exception:
+                        parsedPrimaryVolumeDescriptor = False
+                        # raise
+
+                    # shared.addProperty(tests, "parsedPrimaryVolumeDescriptor", \
+                    # str(parsedPrimaryVolumeDescriptor))
+                byteStart = byteEnd
+
+        # Read through extended (UDF) volume descriptors (if present)
+
+        noExtendedVolumeDescriptors = 0
+        volumeDescriptorIdentifier = "CD001"
+
+        while volumeDescriptorIdentifier in ["CD001", "BEA01", "NSR02", "NSR03", "BOOT2", "TEA01"]:
+            volumeDescriptorIdentifier, volumeDescriptorData, byteEnd = \
+                udf.getExtendedVolumeDescriptor(isoBytes, byteStart)
+            if volumeDescriptorIdentifier in ["BEA01", "NSR02", "NSR03", "BOOT2", "TEA01"]:
+                noExtendedVolumeDescriptors += 1
+
+            byteStart = byteEnd
 
         if containsUDF:
 
@@ -584,6 +629,9 @@ def processImage(image, offset):
         if containsISO9660Signature:
             fsISO.attrib["TYPE"] = "ISO 9660"
             fileSystems.append(fsISO)
+        if containsHSFSignature:
+            fsHSF.attrib["TYPE"] = "High Sierra"
+            fileSystems.append(fsHSF)
         if containsAppleFS:
             fsApple.attrib["TYPE"] = fileSystemApple
             fileSystems.append(fsApple)
