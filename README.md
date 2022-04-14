@@ -594,6 +594,7 @@ The Isolyzer code is largely based on the following documentation and resources:
 
 * <http://wiki.osdev.org/ISO_9660> - explanation of the ISO 9660 filesystem
 * <https://web.archive.org/web/20220111023846/https://www.os2museum.com/files/docs/cdrom/CDROM_Working_Paper-1986.pdf> - Working Paper for a Standard CDROM Volume and File Structure (High Sierra specification)
+* <http://preserve.mactech.com/articles/develop/issue_03/high_sierra.html> - Overview of main differences between the ISO 9660 and High Sierra formats
 * <https://github.com/libyal/libfshfs/blob/master/documentation/Hierarchical%20File%20System%20(HFS).asciidoc> - good explanation of HFS and HFS+ file systems
 * <https://opensource.apple.com/source/IOStorageFamily/IOStorageFamily-116/IOApplePartitionScheme.h> - Apple's code with Apple partitions and zero block definitions
 * <https://en.wikipedia.org/wiki/Apple_Partition_Map#Layout> - overview of Apple partition map
@@ -604,7 +605,7 @@ The Isolyzer code is largely based on the following documentation and resources:
 * <https://www.ecma-international.org/publications/files/ECMA-TR/ECMA%20TR-071.PDF> - UDF Bridge Format
 * <https://sites.google.com/site/udfintro/> - Wenguang's Introduction to Universal Disk Format (UDF)
 * <https://en.wikipedia.org/wiki/Hybrid_disc> - Wikipedia entry on hybrid discs
-
+* <https://archive.org/details/MS_BOOKSHELF_87> -Hight Sierra example file (in BIN/CUE format; use bchunk to extract ISO image first!)
 
 ## License
 
