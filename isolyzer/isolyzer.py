@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 """Verify if size of CD / DVD ISO image is consistent with the information in
 its filesystem-level headers.
 """

@@ -1,5 +1,5 @@
-#! /usr/bin/env python
-"""Parser functions for UDF file systems"""
+#! /usr/bin/env python3
+"""Parser functions for the UDF file system"""
 
 import xml.etree.ElementTree as ET
 from . import byteconv as bc

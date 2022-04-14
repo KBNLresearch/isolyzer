@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 """Various conversion functions from bytes to other data types"""
 
 import struct

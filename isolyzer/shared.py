@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 """Shared functions"""
 
 import xml.etree.ElementTree as ET
