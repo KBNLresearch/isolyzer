@@ -523,19 +523,6 @@ def processImage(image, offset):
                     # str(parsedPrimaryVolumeDescriptor))
                 byteStart = byteEnd
 
-        # Read through extended (UDF) volume descriptors (if present)
-
-        noExtendedVolumeDescriptors = 0
-        volumeDescriptorIdentifier = "CD001"
-
-        while volumeDescriptorIdentifier in ["CD001", "BEA01", "NSR02", "NSR03", "BOOT2", "TEA01"]:
-            volumeDescriptorIdentifier, volumeDescriptorData, byteEnd = \
-                udf.getExtendedVolumeDescriptor(isoBytes, byteStart)
-            if volumeDescriptorIdentifier in ["BEA01", "NSR02", "NSR03", "BOOT2", "TEA01"]:
-                noExtendedVolumeDescriptors += 1
-
-            byteStart = byteEnd
-
         if containsUDF:
 
             # Initialise flags 
