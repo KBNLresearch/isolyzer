@@ -45,7 +45,13 @@ if len(scriptName) == 0:
     scriptName = 'isolyzer'
 
 __version__ = '1.4.0a2'
+
+
+# Name space and XSD schema strings 
 nsString = 'http://kb.nl/ns/isolyzer/v1/'
+schemaString = 'http://kb.nl/ns/isolyzer/v1/ \
+https://raw.githubusercontent.com/KBNLresearch/isolyzer/xsd/xsd/isolyzer-v-1-0.xsd'
+xsiNsString = 'http://www.w3.org/2001/XMLSchema-instance'
 
 # Create parser
 parser = argparse.ArgumentParser(
@@ -772,7 +778,9 @@ def processImages(images, offset):
     Process list of images
     """
     # Create output element
-    root = ET.Element("isolyzer", {'xmlns': nsString})
+    root = ET.Element("isolyzer", {'xmlns': nsString,
+                                   'xmlns:xsi': xsiNsString,
+                                   'xsi:schemaLocation': schemaString})
 
     # Add some info on isolyzer and the version used
     toolInfo = ET.Element('toolInfo')
