@@ -299,17 +299,17 @@ Output:
 
 ```xml
 <?xml version="1.0" ?>
-<isolyzer>
+<isolyzer xmlns="http://kb.nl/ns/isolyzer/v1/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://kb.nl/ns/isolyzer/v1/ https://raw.githubusercontent.com/KBNLresearch/isolyzer/xsd/xsd/isolyzer-v-1-0.xsd">
     <toolInfo>
         <toolName>isolyzer</toolName>
-        <toolVersion>1.0.0b3</toolVersion>
+        <toolVersion>1.4.0a3</toolVersion>
     </toolInfo>
     <image>
         <fileInfo>
             <fileName>iso9660.iso</fileName>
             <filePath>/home/johan/isolyzer/testFiles/iso9660.iso</filePath>
             <fileSizeInBytes>442368</fileSizeInBytes>
-            <fileLastModified>Fri Jun 30 18:31:33 2017</fileLastModified>
+            <fileLastModified>Thu Apr 14 18:49:18 2022</fileLastModified>
         </fileInfo>
         <statusInfo>
             <success>True</success>
@@ -320,7 +320,7 @@ Output:
             <sizeExpected>442368</sizeExpected>
             <sizeActual>442368</sizeActual>
             <sizeDifference>0</sizeDifference>
-            <sizeDifferenceSectors>0</sizeDifferenceSectors>
+            <sizeDifferenceSectors>0.0</sizeDifferenceSectors>
             <sizeAsExpected>True</sizeAsExpected>
             <smallerThanExpected>False</smallerThanExpected>
         </tests>
@@ -331,7 +331,7 @@ Output:
                     <standardIdentifier>CD001</standardIdentifier>
                     <version>1</version>
                     <systemIdentifier>LINUX</systemIdentifier>
-                    <volumeIdentifier>ISO 9660 only demo</volumeIdentifier>
+                    <volumeIdentifier>ISO9660 only</volumeIdentifier>
                     <volumeSpaceSize>216</volumeSpaceSize>
                     <volumeSetSize>1</volumeSetSize>
                     <volumeSequenceNumber>1</volumeSequenceNumber>
@@ -344,14 +344,14 @@ Output:
                     <volumeSetIdentifier/>
                     <publisherIdentifier/>
                     <dataPreparerIdentifier/>
-                    <applicationIdentifier>MKISOFS ISO9660/HFS/UDF FILESYSTEM BUILDER &amp; CDRECORD CD/DVD/BluRay CREATOR (C) 1993 E.YOUNGDALE (C) 1997 J.PEARSON/J.SCHILLING</applicationIdentifier>
+                    <applicationIdentifier>GENISOIMAGE ISO 9660/HFS FILESYSTEM CREATOR (C) 1993 E.YOUNGDALE (C) 1997-2006 J.PEARSON/J.SCHILLING (C) 2006-2007 CDRKIT TEAM</applicationIdentifier>
                     <copyrightFileIdentifier/>
                     <abstractFileIdentifier/>
                     <bibliographicFileIdentifier/>
-                    <volumeCreationDateAndTime>2017/06/30, 18:31:33</volumeCreationDateAndTime>
-                    <volumeModificationDateAndTime>2017/06/30, 18:31:33</volumeModificationDateAndTime>
+                    <volumeCreationDateAndTime>2022/04/07, 20:31:13</volumeCreationDateAndTime>
+                    <volumeModificationDateAndTime>2022/04/07, 20:31:13</volumeModificationDateAndTime>
                     <volumeExpirationDateAndTime>0/00/00, 00:00:00</volumeExpirationDateAndTime>
-                    <volumeEffectiveDateAndTime>2017/06/30, 18:31:33</volumeEffectiveDateAndTime>
+                    <volumeEffectiveDateAndTime>2022/04/07, 20:31:13</volumeEffectiveDateAndTime>
                     <fileStructureVersion>1</fileStructureVersion>
                 </primaryVolumeDescriptor>
             </fileSystem>
@@ -370,17 +370,17 @@ Output:
 
 ```xml
 <?xml version="1.0" ?>
-<isolyzer>
+<isolyzer xmlns="http://kb.nl/ns/isolyzer/v1/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://kb.nl/ns/isolyzer/v1/ https://raw.githubusercontent.com/KBNLresearch/isolyzer/xsd/xsd/isolyzer-v-1-0.xsd">
     <toolInfo>
         <toolName>isolyzer</toolName>
-        <toolVersion>1.0.0b3</toolVersion>
+        <toolVersion>1.4.0a3</toolVersion>
     </toolInfo>
     <image>
         <fileInfo>
             <fileName>iso9660_trunc.iso</fileName>
             <filePath>/home/johan/isolyzer/testFiles/iso9660_trunc.iso</filePath>
             <fileSizeInBytes>49157</fileSizeInBytes>
-            <fileLastModified>Fri Jun 30 18:31:33 2017</fileLastModified>
+            <fileLastModified>Thu Apr 14 18:49:18 2022</fileLastModified>
         </fileInfo>
         <statusInfo>
             <success>True</success>
@@ -391,7 +391,7 @@ Output:
             <sizeExpected>442368</sizeExpected>
             <sizeActual>49157</sizeActual>
             <sizeDifference>-393211</sizeDifference>
-            <sizeDifferenceSectors>-192</sizeDifferenceSectors>
+            <sizeDifferenceSectors>-191.99755859375</sizeDifferenceSectors>
             <sizeAsExpected>False</sizeAsExpected>
             <smallerThanExpected>True</smallerThanExpected>
         </tests>
@@ -400,8 +400,8 @@ Output:
                 <primaryVolumeDescriptor>
                     <typeCode>1</typeCode>
                     <standardIdentifier>CD001</standardIdentifier>
-                        ::
-                        ::
+                       ::
+                       ::
                     <fileStructureVersion>1</fileStructureVersion>
                 </primaryVolumeDescriptor>
             </fileSystem>
@@ -436,17 +436,17 @@ Output:
 
 ```xml
 <?xml version="1.0" ?>
-<isolyzer>
+<isolyzer xmlns="http://kb.nl/ns/isolyzer/v1/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://kb.nl/ns/isolyzer/v1/ https://raw.githubusercontent.com/KBNLresearch/isolyzer/xsd/xsd/isolyzer-v-1-0.xsd">
     <toolInfo>
         <toolName>isolyzer</toolName>
-        <toolVersion>1.0.0b3</toolVersion>
+        <toolVersion>1.4.0a3</toolVersion>
     </toolInfo>
     <image>
         <fileInfo>
             <fileName>multisession.iso</fileName>
             <filePath>/home/johan/isolyzer/testFiles/multisession.iso</filePath>
             <fileSizeInBytes>6950912</fileSizeInBytes>
-            <fileLastModified>Wed Apr 19 14:39:27 2017</fileLastModified>
+            <fileLastModified>Wed Nov  1 18:19:19 2017</fileLastModified>
         </fileInfo>
         <statusInfo>
             <success>True</success>
@@ -457,7 +457,7 @@ Output:
             <sizeExpected>6946816</sizeExpected>
             <sizeActual>6950912</sizeActual>
             <sizeDifference>4096</sizeDifference>
-            <sizeDifferenceSectors>2</sizeDifferenceSectors>
+            <sizeDifferenceSectors>2.0</sizeDifferenceSectors>
             <sizeAsExpected>False</sizeAsExpected>
             <smallerThanExpected>False</smallerThanExpected>
         </tests>
@@ -466,7 +466,7 @@ Output:
                 <primaryVolumeDescriptor>
                     <typeCode>1</typeCode>
                     <standardIdentifier>CD001</standardIdentifier>
-                        :: 
+                        ::
                         ::
                     <fileStructureVersion>1</fileStructureVersion>
                 </primaryVolumeDescriptor>
@@ -486,10 +486,10 @@ Output:
 
 ```xml
 <?xml version="1.0" ?>
-<isolyzer>
+<isolyzer xmlns="http://kb.nl/ns/isolyzer/v1/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://kb.nl/ns/isolyzer/v1/ https://raw.githubusercontent.com/KBNLresearch/isolyzer/xsd/xsd/isolyzer-v-1-0.xsd">
     <toolInfo>
         <toolName>isolyzer</toolName>
-        <toolVersion>1.4.0a1</toolVersion>
+        <toolVersion>1.4.0a3</toolVersion>
     </toolInfo>
     <image>
         <fileInfo>
