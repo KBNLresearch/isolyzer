@@ -10,6 +10,7 @@ import pytest
 from lxml import etree
 
 from isolyzer.isolyzer import processImage
+from isolyzer.isolyzer import processImages
 
 sizeDifferenceSectors = {
 "hfs.iso":2.0,
@@ -52,6 +53,9 @@ SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
 # Root dir of isolyzer repo
 ISOLYZER_DIR = os.path.split(os.path.split(SCRIPT_DIR)[0])[0]
+
+# XSD file (path resolved from SCRIPT_DIR)
+xsdFile = os.path.join(ISOLYZER_DIR, "xsd/isolyzer-v-1-0.xsd")
 
 # Directory with test files
 testFilesDir = os.path.join(ISOLYZER_DIR, "testFiles")
@@ -112,3 +116,21 @@ def test_fileSystems(input):
             fsDetected.append(fsType)
         # Test if file systems in both lists are identical
         assert set(fsKnown) == set(fsDetected)
+
+def test_xml_is_valid(capsys):
+    """
+    Run processImages function on all files in test corpus and
+    verify resulting XML output validates against XSD schema
+    """
+
+    processImages(testFiles, 0)
+    
+    # Capture output from stdout
+    captured = capsys.readouterr()
+    xmlOut = captured.out
+    # Parse XSD schema
+    xmlschema_doc = etree.parse(xsdFile)
+    xmlschema = etree.XMLSchema(xmlschema_doc)
+    # Parse XML
+    xml_doc = etree.fromstring(xmlOut.encode())
+    assert xmlschema.validate(xml_doc)

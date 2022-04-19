@@ -777,6 +777,13 @@ def processImages(images, offset):
     """
     Process list of images
     """
+
+    global out
+    global err
+
+    out = codecs.getwriter("UTF-8")(sys.stdout.buffer)
+    err = codecs.getwriter("UTF-8")(sys.stderr.buffer)
+
     # Create output element
     root = ET.Element("isolyzer", {'xmlns': nsString,
                                    'xmlns:xsi': xsiNsString,
@@ -799,12 +806,6 @@ def processImages(images, offset):
 
 def main():
     """Main command line application"""
-
-    global out
-    global err
-
-    out = codecs.getwriter("UTF-8")(sys.stdout.buffer)
-    err = codecs.getwriter("UTF-8")(sys.stderr.buffer)
 
     # Get input from command line
     args = parseCommandLine()
