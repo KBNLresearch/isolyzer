@@ -45,7 +45,7 @@ if len(scriptName) == 0:
     scriptName = 'isolyzer'
 
 __version__ = '1.4.0a2'
-nsString = 'http://kb.nl/ns/isolyzer/'
+nsString = 'http://kb.nl/ns/isolyzer/v1/'
 
 # Create parser
 parser = argparse.ArgumentParser(
