@@ -50,7 +50,7 @@ __version__ = '1.4.0rc1'
 # Name space and XSD schema strings 
 nsString = 'http://kb.nl/ns/isolyzer/v1/'
 schemaString = 'http://kb.nl/ns/isolyzer/v1/ \
-https://raw.githubusercontent.com/KBNLresearch/isolyzer/master/xsd/isolyzer-v-1-0.xsd'
+https://raw.githubusercontent.com/KBNLresearch/isolyzer/main/xsd/isolyzer-v-1-0.xsd'
 xsiNsString = 'http://www.w3.org/2001/XMLSchema-instance'
 
 # Create parser
