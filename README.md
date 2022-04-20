@@ -131,6 +131,42 @@ isolyzer [-h] [--version] [--offset SECTOROFFSET] ISOImage
 
 `--offset SECTOROFFSET`, `-o SECTOROFFSET` : offset (in sectors) of ISO image on CD (analogous to *-N* option in cdinfo; only affects size calculation for ISO 9660 file systems)
 
+## Using isolyzer as a Python module
+
+Instead of using isolyzer from the command-line, you can also import
+it as a module in your own Python programs. To do so, install isolyzer
+with *pip*. Then import it into your code by adding:
+
+```python
+from isolyzer import isolyzer
+```
+
+Use the *processImage* function to analyze a file. This function takes
+two arguments:
+
+1. The file that you want to analyze
+2. A sector offset value
+
+The following minimal script shows how this works:
+
+```python
+#! /usr/bin/env python3
+
+from isolyzer import isolyzer
+
+# Define image file
+myFile = "/home/johan/isolyzer/testFiles/iso9660.iso"
+
+# Analyse with isolyzer, result to Element object
+isolyzerResult = isolyzer.processImage(myFile, 0)
+
+# Isolyzer status
+isolyzerSuccess = isolyzerResult.find('statusInfo/success').text
+
+# True/false flag that indicates if image smaller than expected
+smallerThanExpected = isolyzerResult.find('tests/smallerThanExpected').text
+```
+
 ## Calculation of the expected file size
 
 ### ISO 9660
