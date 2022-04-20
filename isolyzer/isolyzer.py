@@ -44,7 +44,7 @@ scriptPath, scriptName = os.path.split(sys.argv[0])
 if len(scriptName) == 0:
     scriptName = 'isolyzer'
 
-__version__ = '1.4.0a3'
+__version__ = '1.4.0rc1'
 
 
 # Name space and XSD schema strings 
