@@ -813,7 +813,8 @@ def main():
     # In Linux this works for wildcard expressions (but in Windows this is only a string!)
     if platform.system() == "Windows":
         # Windows doesn't natively handle wildcard expansion, so we need to do it ourselves
-        ISOImages = glob.glob(args.ISOImages[0])
+        escaped = glob.escape(args.ISOImages[0])
+        ISOImages = glob.glob(escaped)
     else:
         # In Linux the OS takes care of the wildcard expansion
         ISOImages = args.ISOImages
