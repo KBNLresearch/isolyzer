@@ -813,8 +813,14 @@ def main():
     # In Linux this works for wildcard expressions (but in Windows this is only a string!)
     if platform.system() == "Windows":
         # Windows doesn't natively handle wildcard expansion, so we need to do it ourselves
-        escaped = glob.escape(args.ISOImages[0])
-        ISOImages = glob.glob(escaped)
+        try:
+            # This can result in a regex error if filename contains
+            # special character
+            ISOImages = glob.glob(args.ISOImages[0])
+        except re.error:
+            # In case of regex error use this fallback 
+            escaped = glob.escape(args.ISOImages[0])
+            ISOImages = glob.glob(escaped)
     else:
         # In Linux the OS takes care of the wildcard expansion
         ISOImages = args.ISOImages
